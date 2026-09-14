@@ -182,6 +182,48 @@ def trigger():
     except ValueError as ex: return jsonify({'error':str(ex)}),400
     except Exception as ex: return jsonify({'error':str(ex)}),500
 
+
+def _call_log_row(call_id):
+    conn=connect(); row=conn.execute('SELECT * FROM call_logs WHERE id=?',(call_id,)).fetchone(); conn.close()
+    if not row: return None
+    d=dict(row); d['structured_result']=json.loads(row['structured_result']) if row['structured_result'] else None; d['transcript']=json.loads(row['transcript']) if row['transcript'] else []
+    return d
+
+@app.get('/api/calls/<call_id>')
+def call_status(call_id):
+    """Reads the current status of a call. Dry-run calls are already
+    terminal by the time they're logged, so this just returns the stored
+    row. Live calls previously had NO way to ever be checked again after
+    creation — trigger-call would fire and the log stayed at status=queued
+    forever. This fetches the live result from CALL-E and, the first time it
+    sees a terminal status, applies it exactly the way the dry-run path
+    already does (write structured result, update the entity, log it)."""
+    record=_call_log_row(call_id)
+    if not record: return jsonify({'error':'call not found'}),404
+    if call_id.startswith('dryrun_') or record['status'] in ('completed','failed','canceled'):
+        return jsonify(record)
+    try:
+        live=get_call(call_id)
+    except Exception as ex:
+        return jsonify({'error':str(ex)}),502
+    if not live:
+        return jsonify(record)
+    status=live.get('status', record['status'])
+    if status not in ('completed','failed','canceled'):
+        record['status']=status
+        return jsonify(record)
+    structured=live.get('structured_result'); summary=live.get('summary'); transcript=live.get('transcript',[])
+    save_call(call_id, record['pillar'], record['entity_id'], record['act'],
+              {'summary':summary,'structured_result':structured,'transcript':transcript},
+              status, record['created_at'], now(), False)
+    e=entity(record['pillar'], record['entity_id'])
+    if e and status=='completed':
+        apply_result(record['pillar'], record['act'], e, {'structured_result':structured})
+    label=(e or {}).get('name') or (e or {}).get('tool') or record['entity_id']
+    add_log(record['pillar'], f"{label} — {summary or status}")
+    return jsonify(_call_log_row(call_id))
+
+
 if __name__ == '__main__':
     print('Starting Relay backend...')
     app.run(

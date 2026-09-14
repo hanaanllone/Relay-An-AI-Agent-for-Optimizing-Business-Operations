@@ -12,8 +12,18 @@ SCHEMAS = {
 }
 
 def build(pillar, act, e, policies, context=None):
-    policy = policies.get('employee' if pillar == 'employee' else 'customer' if pillar == 'customer' else 'vendor', '')
     key = f'{pillar}:{act}'
+    if pillar == 'employee':
+        policy = policies.get('employee', '')
+    elif pillar == 'customer':
+        # customer:plan explicitly promises to answer only from approved
+        # customer AND marketing policy — it was previously never given the
+        # marketing policy text at all, so that promise wasn't enforceable.
+        policy = policies.get('customer', '')
+        if key == 'customer:plan':
+            policy = f"{policy}\n\n{policies.get('marketing', '')}".strip()
+    else:
+        policy = policies.get('vendor', '')
     owner = e.get('owner') or e.get('name') or 'the account owner'
     context = context or {}
     if key == 'employee:checkin':

@@ -116,6 +116,265 @@
         "Zoom"
       ],
       "upcoming_meetings": "None"
+    },
+    {
+      "id": "e7",
+      "name": "Liam Foster",
+      "role": "Frontend Engineer",
+      "dept": "Engineering",
+      "phone": "+15550101007",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Checked in on time.",
+      "flag": null,
+      "assigned_software": [
+        "GitHub Enterprise",
+        "Slack",
+        "Figma"
+      ],
+      "upcoming_meetings": "Engineering Standup \u00b7 09:30"
+    },
+    {
+      "id": "e8",
+      "name": "Grace Kim",
+      "role": "Engineering Intern",
+      "dept": "Engineering",
+      "phone": "+15550101008",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Checked in on time.",
+      "flag": null,
+      "assigned_software": [
+        "GitHub Enterprise",
+        "Slack"
+      ],
+      "upcoming_meetings": "Engineering Standup \u00b7 09:30"
+    },
+    {
+      "id": "e9",
+      "name": "Nathan Price",
+      "role": "Site Reliability Engineer",
+      "dept": "Engineering",
+      "phone": "+15550101009",
+      "attendance_status": "absent",
+      "checkin_status": "no_checkin",
+      "note": "No check-in recorded at 9:20 AM.",
+      "flag": "No check-in",
+      "assigned_software": [
+        "GitHub Enterprise",
+        "Slack",
+        "Snowflake"
+      ],
+      "upcoming_meetings": "None"
+    },
+    {
+      "id": "e10",
+      "name": "Isabella Cruz",
+      "role": "UX Researcher",
+      "dept": "Design",
+      "phone": "+15550101010",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Checked in on time.",
+      "flag": null,
+      "assigned_software": [
+        "Figma",
+        "Slack"
+      ],
+      "upcoming_meetings": "Product Review \u00b7 14:00"
+    },
+    {
+      "id": "e11",
+      "name": "Ryan Patel",
+      "role": "Design Lead",
+      "dept": "Design",
+      "phone": "+15550101011",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Checked in on time.",
+      "flag": null,
+      "assigned_software": [
+        "Figma",
+        "Slack",
+        "Zoom"
+      ],
+      "upcoming_meetings": "Product Review \u00b7 14:00"
+    },
+    {
+      "id": "e12",
+      "name": "Emily Ward",
+      "role": "Account Executive",
+      "dept": "Sales",
+      "phone": "+15550101012",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Checked in on time.",
+      "flag": null,
+      "assigned_software": [
+        "Salesforce",
+        "Slack"
+      ],
+      "upcoming_meetings": "Renewal Planning \u00b7 16:30"
+    },
+    {
+      "id": "e13",
+      "name": "Jordan Miller",
+      "role": "Sales Director",
+      "dept": "Sales",
+      "phone": "+15550101013",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Checked in on time.",
+      "flag": null,
+      "assigned_software": [
+        "Salesforce",
+        "Slack",
+        "Zoom"
+      ],
+      "upcoming_meetings": "Renewal Planning \u00b7 16:30"
+    },
+    {
+      "id": "e14",
+      "name": "Ava Bennett",
+      "role": "Sales Development Rep",
+      "dept": "Sales",
+      "phone": "+15550101014",
+      "attendance_status": "late",
+      "checkin_status": "running_late",
+      "note": "Running late; manager informed.",
+      "flag": "Running late",
+      "assigned_software": [
+        "Salesforce",
+        "Slack"
+      ],
+      "upcoming_meetings": "Renewal Planning \u00b7 16:30"
+    },
+    {
+      "id": "e15",
+      "name": "Lucas Herrera",
+      "role": "Data Analyst",
+      "dept": "Analytics",
+      "phone": "+15550101015",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Checked in on time.",
+      "flag": null,
+      "assigned_software": [
+        "Snowflake",
+        "Slack"
+      ],
+      "upcoming_meetings": "Analytics Sync \u00b7 11:30"
+    },
+    {
+      "id": "e16",
+      "name": "Mia Sullivan",
+      "role": "Analytics Manager",
+      "dept": "Analytics",
+      "phone": "+15550101016",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Checked in on time.",
+      "flag": null,
+      "assigned_software": [
+        "Snowflake",
+        "Slack",
+        "Zoom"
+      ],
+      "upcoming_meetings": "Analytics Sync \u00b7 11:30"
+    },
+    {
+      "id": "e17",
+      "name": "Henry Coleman",
+      "role": "People Ops Coordinator",
+      "dept": "People",
+      "phone": "+15550101017",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Checked in on time.",
+      "flag": null,
+      "assigned_software": [
+        "Slack",
+        "Zoom"
+      ],
+      "upcoming_meetings": "People Operations Sync \u00b7 13:00"
+    },
+    {
+      "id": "e18",
+      "name": "Zoe Ramirez",
+      "role": "Marketing Manager",
+      "dept": "Marketing",
+      "phone": "+15550101018",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Checked in on time.",
+      "flag": null,
+      "assigned_software": [
+        "Slack",
+        "Zoom"
+      ],
+      "upcoming_meetings": "None"
+    },
+    {
+      "id": "e19",
+      "name": "Owen Mitchell",
+      "role": "Content Strategist",
+      "dept": "Marketing",
+      "phone": "+15550101019",
+      "attendance_status": "remote",
+      "checkin_status": "remote_today",
+      "note": "Approved remote schedule.",
+      "flag": null,
+      "assigned_software": [
+        "Slack"
+      ],
+      "upcoming_meetings": "None"
+    },
+    {
+      "id": "e20",
+      "name": "Chloe Bishop",
+      "role": "Customer Support Lead",
+      "dept": "Support",
+      "phone": "+15550101020",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Checked in on time.",
+      "flag": null,
+      "assigned_software": [
+        "Slack",
+        "Zoom"
+      ],
+      "upcoming_meetings": "None"
+    },
+    {
+      "id": "e21",
+      "name": "Dylan Ortiz",
+      "role": "Support Engineer",
+      "dept": "Support",
+      "phone": "+15550101021",
+      "attendance_status": "absent",
+      "checkin_status": "no_checkin",
+      "note": "No check-in recorded at 9:10 AM.",
+      "flag": "No check-in",
+      "assigned_software": [
+        "Slack",
+        "Zoom"
+      ],
+      "upcoming_meetings": "None"
+    },
+    {
+      "id": "e22",
+      "name": "Natalie Fox",
+      "role": "Finance Analyst",
+      "dept": "Finance",
+      "phone": "+15550101022",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Checked in on time.",
+      "flag": null,
+      "assigned_software": [
+        "Slack"
+      ],
+      "upcoming_meetings": "None"
     }
   ],
   "customers": [
@@ -160,6 +419,90 @@
       "recent_issue": "Resolved support issue",
       "note": "Good account health; collect feedback.",
       "flag": null
+    },
+    {
+      "id": "c4",
+      "name": "Mason Hughes",
+      "customer_company": "Brightline Logistics",
+      "phone": "+15550101104",
+      "plan": "Standard",
+      "renewal_date": "2026-09-20",
+      "renewal_status": "pending",
+      "customer_status": "Active",
+      "usage": "Medium",
+      "recent_issue": "No open issues",
+      "note": "Renewal approaching.",
+      "flag": "Renewal due"
+    },
+    {
+      "id": "c5",
+      "name": "Harper Lane",
+      "customer_company": "Cobalt Retail Group",
+      "phone": "+15550101105",
+      "plan": "Premium",
+      "renewal_date": "2026-10-02",
+      "renewal_status": "active",
+      "customer_status": "Active",
+      "usage": "High",
+      "recent_issue": "No open issues",
+      "note": "Strong usage, healthy account.",
+      "flag": null
+    },
+    {
+      "id": "c6",
+      "name": "Elijah Brooks",
+      "customer_company": "Fernwood Studios",
+      "phone": "+15550101106",
+      "plan": "Standard",
+      "renewal_date": "2026-09-21",
+      "renewal_status": "at_risk",
+      "customer_status": "At risk",
+      "usage": "Low",
+      "recent_issue": "Login issues reported twice",
+      "note": "Usage has dropped; check in recommended.",
+      "flag": "At risk"
+    },
+    {
+      "id": "c7",
+      "name": "Scarlett James",
+      "customer_company": "Union Point Media",
+      "phone": "+15550101107",
+      "plan": "Enterprise",
+      "renewal_date": "2026-11-05",
+      "renewal_status": "active",
+      "customer_status": "Active",
+      "usage": "High",
+      "recent_issue": "No open issues",
+      "note": "Long-tenured, stable account.",
+      "flag": null
+    },
+    {
+      "id": "c8",
+      "name": "Benjamin Ross",
+      "customer_company": "Cascade Freight Co.",
+      "phone": "+15550101108",
+      "plan": "Premium",
+      "renewal_date": "2026-09-19",
+      "renewal_status": "pending",
+      "customer_status": "Active",
+      "usage": "Medium",
+      "recent_issue": "Billing question resolved",
+      "note": "Renewal approaching soon.",
+      "flag": "Renewal due"
+    },
+    {
+      "id": "c9",
+      "name": "Layla Simmons",
+      "customer_company": "Ironclad Security",
+      "phone": "+15550101109",
+      "plan": "Standard",
+      "renewal_date": "2026-10-14",
+      "renewal_status": "active",
+      "customer_status": "Active",
+      "usage": "Medium",
+      "recent_issue": "No open issues",
+      "note": "Stable, no action needed.",
+      "flag": null
     }
   ],
   "licenses": [
@@ -167,7 +510,7 @@
       "id": "l1",
       "tool": "Figma",
       "dept": "Design",
-      "owner": "Maya Carter",
+      "owner": "Ryan Miller",
       "owner_phone": "+15550101201",
       "phone": "+15550101201",
       "seats_purchased": 40,
@@ -182,8 +525,8 @@
       "tool": "Slack",
       "dept": "Engineering",
       "owner": "Marcus Lee",
-      "owner_phone": "+15550101005",
-      "phone": "+15550101005",
+      "owner_phone": "+15550101202",
+      "phone": "+15550101202",
       "seats_purchased": 120,
       "seats_active": 110,
       "cost_per_seat": 8,
@@ -196,8 +539,8 @@
       "tool": "GitHub Enterprise",
       "dept": "Engineering",
       "owner": "Marcus Lee",
-      "owner_phone": "+15550101005",
-      "phone": "+15550101005",
+      "owner_phone": "+15550101203",
+      "phone": "+15550101203",
       "seats_purchased": 85,
       "seats_active": 63,
       "cost_per_seat": 21,
@@ -210,8 +553,8 @@
       "tool": "Zoom",
       "dept": "People",
       "owner": "Olivia Carter",
-      "owner_phone": "+15550101006",
-      "phone": "+15550101006",
+      "owner_phone": "+15550101204",
+      "phone": "+15550101204",
       "seats_purchased": 55,
       "seats_active": 22,
       "cost_per_seat": 15,
@@ -224,12 +567,68 @@
       "tool": "Salesforce",
       "dept": "Sales",
       "owner": "Jordan Miller",
-      "owner_phone": "+15550101301",
-      "phone": "+15550101301",
+      "owner_phone": "+15550101205",
+      "phone": "+15550101205",
       "seats_purchased": 30,
       "seats_active": 24,
       "cost_per_seat": 75,
       "renewal_date": "2026-11-01",
+      "note": "Healthy utilization.",
+      "flag": null
+    },
+    {
+      "id": "l6",
+      "tool": "Snowflake",
+      "dept": "Analytics",
+      "owner": "Mia Sullivan",
+      "owner_phone": "+15550101206",
+      "phone": "+15550101206",
+      "seats_purchased": 25,
+      "seats_active": 21,
+      "cost_per_seat": 60,
+      "renewal_date": "2026-10-09",
+      "note": "Healthy utilization.",
+      "flag": null
+    },
+    {
+      "id": "l7",
+      "tool": "Notion",
+      "dept": "Marketing",
+      "owner": "Zoe Ramirez",
+      "owner_phone": "+15550101207",
+      "phone": "+15550101207",
+      "seats_purchased": 18,
+      "seats_active": 6,
+      "cost_per_seat": 12,
+      "renewal_date": "2026-09-25",
+      "note": "Low usage since launch.",
+      "flag": "Low utilization"
+    },
+    {
+      "id": "l8",
+      "tool": "Jira",
+      "dept": "Engineering",
+      "owner": "Marcus Lee",
+      "owner_phone": "+15550101208",
+      "phone": "+15550101208",
+      "seats_purchased": 90,
+      "seats_active": 58,
+      "cost_per_seat": 14,
+      "renewal_date": "2026-10-15",
+      "note": "Moderate utilization.",
+      "flag": null
+    },
+    {
+      "id": "l9",
+      "tool": "HubSpot",
+      "dept": "Marketing",
+      "owner": "Zoe Ramirez",
+      "owner_phone": "+15550101209",
+      "phone": "+15550101209",
+      "seats_purchased": 15,
+      "seats_active": 13,
+      "cost_per_seat": 45,
+      "renewal_date": "2026-09-30",
       "note": "Healthy utilization.",
       "flag": null
     }
@@ -289,6 +688,28 @@
       "recipient_ids": [],
       "reminder_calls": [],
       "reminder_status": "scheduled"
+    },
+    {
+      "id": "m6",
+      "title": "Marketing Campaign Review",
+      "date": "2026-09-15",
+      "time": "15:00",
+      "dept": "Marketing",
+      "owner": "Marketing",
+      "recipient_ids": [],
+      "reminder_calls": [],
+      "reminder_status": "scheduled"
+    },
+    {
+      "id": "m7",
+      "title": "Support Weekly Triage",
+      "date": "2026-09-16",
+      "time": "09:30",
+      "dept": "Support",
+      "owner": "Support",
+      "recipient_ids": [],
+      "reminder_calls": [],
+      "reminder_status": "scheduled"
     }
   ],
   "memos": [
@@ -318,6 +739,26 @@
       "body": "Review tools below 50% utilization before renewal.",
       "status": "open",
       "dept": "Sales",
+      "recipient_ids": [],
+      "delivery_calls": [],
+      "delivery_status": "open"
+    },
+    {
+      "id": "memo4",
+      "title": "New Brand Guidelines",
+      "body": "Updated brand assets are live in the shared drive.",
+      "status": "open",
+      "dept": "Marketing",
+      "recipient_ids": [],
+      "delivery_calls": [],
+      "delivery_status": "open"
+    },
+    {
+      "id": "memo5",
+      "title": "Support Escalation Path Update",
+      "body": "Escalate unresolved tickets after 24 hours, not 48.",
+      "status": "open",
+      "dept": "Support",
       "recipient_ids": [],
       "delivery_calls": [],
       "delivery_status": "open"

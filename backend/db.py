@@ -117,10 +117,16 @@ def update_entity(pillar, entity_id, patch):
 
 
 def upsert_entity(pillar, data):
-    if pillar not in ('employees', 'customers', 'licenses', 'meetings', 'memos'):
+    # Accept both singular ('meeting', 'memo', 'license'...) and plural table
+    # names — call sites in app.py are inconsistent about which they pass,
+    # and this used to reject the singular form outright (e.g. every call to
+    # schedule a meeting or publish a memo raised 'invalid entity type').
+    table = {'employee': 'employees', 'customer': 'customers', 'license': 'licenses',
+             'meeting': 'meetings', 'memo': 'memos'}.get(pillar, pillar)
+    if table not in ('employees', 'customers', 'licenses', 'meetings', 'memos'):
         raise ValueError('invalid entity type')
     conn = connect()
-    conn.execute(f'INSERT INTO {pillar}(id,data) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data', (data['id'], json.dumps(data)))
+    conn.execute(f'INSERT INTO {table}(id,data) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data', (data['id'], json.dumps(data)))
     conn.commit(); conn.close(); return data
 
 
