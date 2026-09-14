@@ -108,9 +108,17 @@ function App() {
     <div className="appShell">
       <aside className="sidebar">
         <div className="brandBlock">
-          <div className="brandMark">✦</div>
-          <div><div className="brandName">Relay</div><div className="brandTag">Your Business, Optimized.</div></div>
-        </div>
+  <img
+    src="/relay-icon.png"
+    alt="Relay"
+    className="relayIcon"
+  />
+
+  <div>
+    <div className="brandName">Relay</div>
+    <div className="brandTag">Your Business, Optimized.</div>
+  </div>
+</div>
 
         <nav className="sideNav">
           <div className="navLabel">WORKSPACE</div>
@@ -184,8 +192,17 @@ function Login({ onLogin }) {
       onLogin();
     } catch (e) { setError(e.message); }
   };
-  return <div className="loginPage"><div className="loginGlow" /><div className="loginCard">
-    <div className="brandBlock loginBrand"><div className="brandMark">✦</div><div><div className="brandName">Relay</div><div className="brandTag">Your Business, Optimized.</div></div></div>
+  return <div className="loginPage">
+    <div className="loginGlow" />
+    <div className="loginCard">
+    <div className="loginBrand">
+    <img
+      src="/relay-logo.png"
+      alt="Relay"
+      className="loginLogo"
+    />
+    <div className="brandTag">Your Business, Optimized.</div>
+    </div>
     <div className="eyebrow">COMPANY WORKSPACE</div><h1>{newCo ? 'Create your workspace' : 'Welcome back'}</h1><p>Connect your people, customers, policies and software spend to proactive AI operations.</p>
     <form onSubmit={submit}>{newCo && <input placeholder="Company name" value={name} onChange={e => setName(e.target.value)} required />}<input type="email" placeholder="Company email" value={email} onChange={e => setEmail(e.target.value)} required /><input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required /><button className="primary full">{newCo ? 'Create workspace' : 'Sign in'}</button></form>
     {error && <div className="inlineError">{error}</div>}<button className="textButton" onClick={() => setNewCo(!newCo)}>{newCo ? 'Use demo sign in' : 'Create a company instead'}</button>{!newCo && <div className="demoCreds">Demo workspace <b>admin@relaydemo.com</b><span>/</span><b>demo123</b></div>}

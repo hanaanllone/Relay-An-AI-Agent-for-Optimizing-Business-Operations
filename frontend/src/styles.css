@@ -10,3 +10,28 @@
 @media(max-width:1180px){.topPanels{grid-template-columns:1fr 1fr}.topPanels .attendancePanel{grid-column:1/-1}.bottomPanels{grid-template-columns:1fr 1fr}.insightRow{grid-template-columns:1fr}.sectionKpis{grid-template-columns:repeat(3,1fr)}.analyticsGrid{grid-template-columns:1fr 1fr}.softwareGrid,.entityGrid,.policyGrid{grid-template-columns:1fr}}
 @media(max-width:850px){.sidebar{width:76px;padding:20px 9px}.brandBlock{padding:0 9px 25px}.brandBlock>div:not(.brandMark),.navItem span:not(.navIcon),.navLabel,.connection,.workspaceCard,.userRow>div:not(.avatar),.userRow button{display:none}.navItem{justify-content:center;padding:0}.mainArea{margin-left:76px;width:calc(100% - 76px)}.topHeader{padding:0 20px}.pageArea{padding:22px 20px}.searchWrap{width:45vw}.kpiGrid{grid-template-columns:1fr 1fr}.dashboardHeading{align-items:flex-start}.headingMeta{display:none}.topPanels,.bottomPanels{grid-template-columns:1fr}.topPanels .attendancePanel{grid-column:auto}.analyticsGrid{grid-template-columns:1fr}.sectionKpis{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.sidebar{position:fixed}.topHeader{height:65px}.headerTools select{display:none}.pageArea{padding:18px 13px}.dashboardHeading h1,.pageTitle h1{font-size:23px}.dashboardHeading,.pageTitle{align-items:flex-start;flex-direction:column}.pageTitleActions{width:100%;justify-content:flex-start}.kpiGrid{grid-template-columns:1fr}.sectionKpis{grid-template-columns:1fr 1fr}.formGrid{grid-template-columns:1fr}.memoPageGrid{grid-template-columns:1fr}.meetingCard{grid-template-columns:55px 1fr}.meetingStatus{display:none}.softwareStats{grid-template-columns:1fr 1fr}.entityFacts{grid-template-columns:1fr}.searchWrap{width:55vw}.headerAvatar{display:none}.opportunity{grid-template-columns:52px 1fr}.opportunity button{grid-column:2;justify-self:start}.insightNumber{font-size:28px}}
+.loginBrand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.loginLogo {
+  width: 240px;
+  height: auto;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.loginBrand .brandTag {
+  color: #a7a7b5;
+  font-size: 13px;
+}
+
+.relayIcon {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
