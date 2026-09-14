@@ -33,10 +33,12 @@ const actLabels = {
   feedback: 'Feedback call',
   'usage-review': 'Software renewal review',
   'seat-reclaim': 'Seat reclaim',
+  'meeting-reminder': 'Meeting reminder',
+  'memo': 'Memo delivery',
 };
 
 function App() {
-  const [auth, setAuth] = useState(() => localStorage.getItem('relay_auth') === '1');
+  const [auth, setAuth] = useState(false);
   const [state, setState] = useState(null);
   const [tab, setTab] = useState('dashboard');
   const [error, setError] = useState('');
@@ -74,11 +76,12 @@ function App() {
     return rows.filter(x => `${x.name} ${x.meta || ''}`.toLowerCase().includes(q)).slice(0, 7);
   }, [query, state]);
 
-  if (!auth) return <Login onLogin={() => { localStorage.setItem('relay_auth', '1'); setAuth(true); }} />;
+  if (!auth) return <Login onLogin={() => setAuth(true)} />;
   if (!state) return <div className="loadingScreen"><div className="spinner" />Loading Relay…</div>;
 
-  const logout = () => { localStorage.removeItem('relay_auth'); setAuth(false); };
+  const logout = () => { setAuth(false); setState(null); };
   const currentNav = NAV.find(x => x[0] === tab);
+  const departments = [...new Set((state.employees || []).map(e => e.dept).filter(Boolean))].sort();
 
   async function call(pillar, entity, act) {
     setError('');
@@ -165,8 +168,8 @@ function App() {
           {tab === 'customers' && <Customers items={state.customers} onCall={call} />}
           {tab === 'software' && <Software items={state.licenses} onCall={call} onAdd={x => post('license', x)} />}
           {tab === 'policies' && <Policies policies={state.policies} meta={state.policy_meta} onSaved={load} />}
-          {tab === 'meetings' && <Meetings items={state.meetings} onAdd={x => post('meeting', x)} />}
-          {tab === 'memos' && <Memos items={state.memos} onAdd={x => post('memo', x)} />}
+          {tab === 'meetings' && <Meetings items={state.meetings} departments={departments} onSaved={load} />}
+          {tab === 'memos' && <Memos items={state.memos} departments={departments} onSaved={load} />}
           {tab === 'calls' && <Calls logs={state.call_logs} />}
           {tab === 'analytics' && <Analytics state={state} />}
           {tab === 'settings' && <Settings settings={state.settings} onSaved={load} />}
@@ -210,38 +213,46 @@ function Login({ onLogin }) {
 }
 
 function Dashboard({ state, go, onCall }) {
-  const e = state.employees, c = state.customers, l = state.licenses;
-  const counts = ['present', 'absent', 'late', 'remote', 'leave', 'unknown'].reduce((a, k) => ({ ...a, [k]: e.filter(x => x.attendance_status === k || (k === 'unknown' && x.attendance_status === 'not_checked_in')).length }), {});
-  const spend = l.reduce((s, x) => s + Number(x.seats_purchased) * Number(x.cost_per_seat), 0);
-  const unused = l.reduce((s, x) => s + Math.max(0, x.seats_purchased - x.seats_active) * x.cost_per_seat, 0);
-  const activeSeats = l.reduce((s, x) => s + Number(x.seats_active), 0), purchasedSeats = l.reduce((s, x) => s + Number(x.seats_purchased), 0);
-  const util = purchasedSeats ? Math.round(activeSeats / purchasedSeats * 100) : 0;
-  const attention = e.filter(x => x.flag || ['absent', 'late', 'not_checked_in', 'unknown'].includes(x.attendance_status));
-  return <div>
-    <div className="dashboardHeading"><div><div className="eyebrow">GOOD MORNING, ALEX</div><h1>Today's overview</h1><p>Here's what's happening across your business.</p></div><div className="headingMeta"><span className="statusIndicator"><i /> Relay is active</span><span className="timeChip">{state.server_time}</span></div></div>
+  const e=state.employees||[], c=state.customers||[], l=state.licenses||[];
+  const count=k=>e.filter(x=>x.attendance_status===k).length;
+  const present=count('present'), absent=count('absent'), total=e.length;
+  const todayKey=localDateKey(new Date());
+  const callsToday=(state.call_logs||[]).filter(x=>(x.created_at||'').slice(0,10)===todayKey).length || state.call_logs.length;
+  const spend=l.reduce((s,x)=>s+Number(x.seats_purchased||0)*Number(x.cost_per_seat||0),0);
+  const unused=l.reduce((s,x)=>s+Math.max(0,Number(x.seats_purchased||0)-Number(x.seats_active||0))*Number(x.cost_per_seat||0),0);
+  const renewals=c.filter(x=>x.renewal_date && daysUntil(x.renewal_date)>=0 && daysUntil(x.renewal_date)<=30).length;
+  const attention=e.filter(x=>x.flag || ['absent','late','unknown','not_checked_in'].includes(x.attendance_status));
+  return <div className="dashboard">
+    <div className="dashboardHeading"><div><div className="eyebrow">COMPANY OVERVIEW</div><h1>Today’s overview</h1><p>Operational visibility across people, customers and software.</p></div><div className="headingMeta"><span className="statusIndicator"><i/> Relay is active</span><span className="timeChip">{state.server_time}</span></div></div>
 
-    <section className="kpiGrid">
-      <Kpi title="Present" value={counts.present} note={`${Math.round((counts.present / Math.max(e.length, 1)) * 100)}% of ${e.length} employees`} icon="♟" tone="green" />
-      <Kpi title="Absent" value={counts.absent + counts.unknown} note={`${counts.unknown} need a proactive check-in`} icon="♙" tone="red" />
-      <Kpi title="Calls Today" value={state.call_logs.length} note={`${state.call_logs.filter(x => x.status === 'completed').length} completed · ${state.call_logs.filter(x => x.status !== 'completed').length} pending`} icon="⌕" tone="purple" />
-      <Kpi title="SaaS Spend" value={`$${spend.toLocaleString()}`} note={`${util}% overall utilization`} icon="▣" tone="purple" chart />
+    <section className="kpiGrid fiveKpis">
+      <Kpi title="Present" value={present} note={`${Math.round(present/Math.max(total,1)*100)}% of the team`} icon="●" tone="green"/>
+      <Kpi title="Absent" value={absent} note={`${attention.length} employees need attention`} icon="!" tone="red"/>
+      <Kpi title="Total" value={total} note="Employees in workspace" icon="○" tone="purple"/>
+      <Kpi title="Calls Today" value={callsToday} note={`${state.call_logs.filter(x=>x.status==='completed').length} completed`} icon="⌕" tone="purple"/>
+      <Kpi title="SaaS Spend" value={`$${spend.toLocaleString()}`} note={`${l.length} tracked subscriptions`} icon="▣" tone="purple" chart/>
     </section>
 
-    <section className="dashboardGrid topPanels">
-      <Panel title="Employee Status" subtitle="Live attendance across your organization" action={<span className="panelSelect">This week⌄</span>} className="attendancePanel"><Heatmap employees={e} /></Panel>
-      <Panel title="Upcoming Meetings" action={<button className="panelLink" onClick={() => go('meetings')}>View all</button>}><MeetingPreview meetings={state.meetings} /></Panel>
-      <Panel title="Recent Memos" action={<button className="panelLink" onClick={() => go('memos')}>View all</button>}><MemoPreview memos={state.memos} /></Panel>
+    <section className="homeGrid">
+      <Panel title="Meetings" subtitle="Today + the next four days · 10 AM–5 PM" action={<button className="panelLink" onClick={()=>go('meetings')}>View all</button>} className="meetingsLarge">
+        <MeetingHeatmap meetings={state.meetings||[]}/>
+      </Panel>
+      <Panel title="Memos" subtitle={`${state.memos.length} active`} action={<button className="panelLink" onClick={()=>go('memos')}>View all</button>} className="memosPanel">
+        <MemoPreview memos={state.memos}/>
+      </Panel>
+      <Panel title="Renewals" subtitle="Next 30 days" action={<button className="panelLink" onClick={()=>go('customers')}>View all</button>} className="renewalsPanel">
+        <div className="renewalBig">{renewals}<small>customer renewals</small></div>
+        <div className="renewalRows">{c.filter(x=>x.renewal_date).sort((a,b)=>a.renewal_date.localeCompare(b.renewal_date)).slice(0,3).map(x=><div key={x.id}><span>{x.name}</span><b>{daysUntil(x.renewal_date)}d</b></div>)}</div>
+      </Panel>
+      <Panel title="Unused Spend" subtitle="Optimization opportunity" action={<button className="panelLink" onClick={()=>go('software')}>Review</button>} className="unusedPanel">
+        <div className="unusedHero"><strong>${unused.toLocaleString()}<small>/mo</small></strong><span>Potential monthly savings across underused subscriptions.</span></div>
+        <MiniBars items={l.slice(0,8).map(x=>({name:x.tool,value:Math.max(0,x.seats_purchased-x.seats_active)*x.cost_per_seat}))}/>
+      </Panel>
     </section>
 
-    <section className="dashboardGrid bottomPanels">
-      <Panel title="Customers" action={<button className="panelLink" onClick={() => go('customers')}>View all</button>} className="chartCard"><div className="chartHeader"><div><strong>{c.length}</strong><span>Total customers</span></div><b className="positive">↑ 12%</b></div><LineChart values={[18, 20, 19, 27, 31, 30, 38, 34, 42, 39, 47]} labels={['Jan','Feb','Mar','Apr','May','Jun','Jul']} /></Panel>
-      <Panel title="Software / SaaS" action={<button className="panelLink" onClick={() => go('software')}>View all</button>} className="chartCard"><div className="chartHeader"><div><strong>${spend.toLocaleString()}</strong><span>Monthly spend</span></div><b className="positive">↓ {Math.round(unused / Math.max(spend, 1) * 100)}% waste</b></div><MiniBars items={l.map(x => ({ name: x.tool, value: x.seats_purchased * x.cost_per_seat, util: x.seats_active / Math.max(x.seats_purchased, 1) }))} /></Panel>
-      <Panel title="Call Activity" action={<button className="panelLink" onClick={() => go('calls')}>View all</button>} className="chartCard"><div className="chartHeader"><div><strong>{state.call_logs.length}</strong><span>Calls today</span></div><div className="callLegend"><span><i className="dot purple" />{state.call_logs.filter(x => x.status === 'completed').length} Completed</span><span><i className="dot mutedDot" />{state.call_logs.filter(x => x.status !== 'completed').length} Pending</span></div></div><LineChart values={[3,4,4,6,9,12,15,13,9,8,5,4]} labels={['8am','10am','12pm','2pm','4pm','6pm']} /></Panel>
-    </section>
-
-    <section className="dashboardGrid insightRow">
-      <Panel title="Needs attention" subtitle="Recommended next actions"><div className="attentionList">{attention.slice(0, 4).map(x => <div className="attentionItem" key={x.id}><div className={`attentionIcon ${x.attendance_status === 'absent' ? 'red' : 'purple'}`}>!</div><div><b>{x.name}</b><small>{x.flag || 'No check-in'} · {x.dept}</small></div><button onClick={() => onCall('employee', x, 'checkin')}>Call now</button></div>)}{!attention.length && <Empty text="Everything looks clear." />}</div></Panel>
-      <Panel title="Optimization opportunity" subtitle="Highest-value SaaS review"><div className="opportunity"><div className="oppTool">{l[0]?.tool || 'No software'}</div><div><strong>${unused.toLocaleString()} / month</strong><small>potential unused spend across subscriptions</small></div><button onClick={() => go('software')}>Review subscriptions →</button></div></Panel>
+    <section className="homeLower">
+      <Panel title="Needs attention" subtitle="Recommended next actions"><div className="attentionList">{attention.slice(0,5).map(x=><div className="attentionItem" key={x.id}><div className={`attentionIcon ${x.attendance_status==='absent'?'red':'purple'}`}>!</div><div><b>{x.name}</b><small>{x.flag||'No check-in'} · {x.dept}</small></div><button onClick={()=>onCall('employee',x,'checkin')}>Call now</button></div>)}{!attention.length&&<Empty text="Everything looks clear."/>}</div></Panel>
+      <Panel title="Software optimization" subtitle="Highest-value opportunities"><div className="optimizationRows">{l.sort((a,b)=>(b.seats_purchased-b.seats_active)*b.cost_per_seat-(a.seats_purchased-a.seats_active)*a.cost_per_seat).slice(0,4).map(x=>{const us=Math.max(0,x.seats_purchased-x.seats_active)*x.cost_per_seat; return <div key={x.id}><div><b>{x.tool}</b><small>{x.seats_active}/{x.seats_purchased} active · {x.optimization_status==='optimized'?'Optimized':'Needs review'}</small></div><strong>${us}/mo</strong></div>})}</div></Panel>
     </section>
   </div>;
 }
@@ -267,7 +278,7 @@ function Software({ items, onCall, onAdd }) {
     <div className="sectionKpis"><SmallStat label="Monthly spend" value={`$${spend.toLocaleString()}`} tone="purple"/><SmallStat label="Potential unused" value={`$${unused.toLocaleString()}`} tone="yellow"/><SmallStat label="Purchased seats" value={items.reduce((s,x)=>s+x.seats_purchased,0)}/><SmallStat label="Active seats" value={items.reduce((s,x)=>s+x.seats_active,0)} tone="green"/></div>
     {show && <SoftwareForm onAdd={async x => { await onAdd(x); setShow(false); }} />}
     <div className="sectionTitle"><div><div className="eyebrow">SOFTWARE INVENTORY</div><h2>Subscriptions</h2></div><span>{filtered.length} of {items.length} shown</span></div>
-    <div className="softwareGrid">{filtered.map(x => { const unusedSeats = Math.max(0,x.seats_purchased-x.seats_active), unusedSpend = unusedSeats*x.cost_per_seat, util = x.seats_purchased ? Math.round(x.seats_active/x.seats_purchased*100) : 0; return <div className="softwareCardDark" key={x.id}><div className="softwareHeader"><div className="toolLogo">{x.tool.slice(0,1)}</div><div><h3>{x.tool}</h3><small>{x.dept} · Owner: {x.owner}</small></div><span className={`utilPill ${util < 50 ? 'danger' : 'good'}`}>{util}%</span></div><div className="utilBar"><i style={{width:`${Math.min(util,100)}%`}} /></div><div className="softwareStats"><div><b>{x.seats_purchased}</b><span>Seats</span></div><div><b>{x.seats_active}</b><span>Active</span></div><div><b>${x.cost_per_seat}</b><span>Per seat</span></div><div><b>${x.seats_purchased*x.cost_per_seat}</b><span>Monthly</span></div></div><div className="renewalRow"><div><span>Renewal</span><b>{x.renewal_date}</b><small>{Math.max(daysUntil(x.renewal_date),0)} days</small></div><div className="unusedSpend"><span>Potential unused</span><b>${unusedSpend}/mo</b></div></div>{x.flag && <div className="flagBanner">⚠ {x.flag}</div>}<button className="primary full small" onClick={() => onCall('license', x, 'usage-review')}>Review renewal</button></div> })}</div>
+    <div className="softwareGrid">{filtered.map(x => { const unusedSeats = Math.max(0,x.seats_purchased-x.seats_active), unusedSpend = unusedSeats*x.cost_per_seat, util = x.seats_purchased ? Math.round(x.seats_active/x.seats_purchased*100) : 0; return <div className="softwareCardDark" key={x.id}><div className="softwareHeader"><div className="toolLogo">{x.tool.slice(0,1)}</div><div><h3>{x.tool}</h3><small>{x.dept} · Owner: {x.owner}</small></div><span className={`utilPill ${util < 50 ? 'danger' : 'good'}`}>{util}%</span></div><div className="utilBar"><i style={{width:`${Math.min(util,100)}%`}} /></div><div className="softwareStats"><div><b>{x.seats_purchased}</b><span>Seats</span></div><div><b>{x.seats_active}</b><span>Active</span></div><div><b>${x.cost_per_seat}</b><span>Per seat</span></div><div><b>${x.seats_purchased*x.cost_per_seat}</b><span>Monthly</span></div></div><div className="renewalRow"><div><span>Renewal</span><b>{x.renewal_date}</b><small>{Math.max(daysUntil(x.renewal_date),0)} days</small></div><div className="unusedSpend"><span>Potential unused</span><b>${unusedSpend}/mo</b></div></div>{x.flag && <div className="flagBanner">⚠ {x.flag}</div>}<button className="primary full small" disabled={x.optimization_status==='optimized'} onClick={() => onCall('license', x, 'usage-review')}>{x.optimization_status==='optimized'?'✓ Optimized':'Review & optimize'}</button></div> })}</div>
   </Page>;
 }
 
@@ -275,20 +286,45 @@ function SoftwareForm({ onAdd }) { const [x,setX]=useState({tool:'',dept:'',owne
 
 function Policies({ policies, meta, onSaved }) { const [local,setLocal]=useState(policies); const [saving,setSaving]=useState(''); const upload=async(k,file)=>{const fd=new FormData();fd.append('key',k);fd.append('file',file);const r=await fetch(`${API}/policies/upload`,{method:'POST',body:fd});if(!r.ok)throw Error((await r.json()).error);onSaved();}; const save=async k=>{setSaving(k);await fetch(`${API}/policies/${k}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:local[k]})});setSaving('');onSaved();}; return <Page title="Company Policies" sub="Business-specific guardrails that Relay uses during conversations and actions."><div className="policyHero"><div className="policyHeroIcon">▤</div><div><strong>Policies power Relay's decisions</strong><p>Upload or edit the rules your agents should follow. The supplied demo policies are already loaded.</p></div></div><div className="policyGrid">{Object.entries(policies).map(([k,v])=><div className="policyCard" key={k}><div className="policyHeader"><div><div className="eyebrow">{k.toUpperCase()}</div><h3>{policyLabels[k]||k}</h3><small>{meta[k]?.filename || 'Not uploaded'} · updated {meta[k]?.updated_at || '—'}</small></div><label className="uploadButton">Upload<input type="file" accept=".txt,.md,text/plain,text/markdown" onChange={e=>e.target.files[0]&&upload(k,e.target.files[0])}/></label></div><textarea value={local[k]} onChange={e=>setLocal({...local,[k]:e.target.value})}/><button onClick={()=>save(k)}>{saving===k?'Saving…':'Save policy'}</button></div>)}</div></Page>; }
 
-function Meetings({ items, onAdd }) { const [show,setShow]=useState(false); const [x,setX]=useState({title:'',time:'10:00',owner:'',date:'2026-09-14'}); return <Page title="Meetings" sub="A single view of upcoming meetings and the operational context around them." actions={<button className="primary" onClick={()=>setShow(!show)}>+ Schedule meeting</button>}>{show&&<div className="darkForm"><div className="formGrid"><input placeholder="Meeting title" value={x.title} onChange={e=>setX({...x,title:e.target.value})}/><input placeholder="Time" value={x.time} onChange={e=>setX({...x,time:e.target.value})}/><input placeholder="Owner / team" value={x.owner} onChange={e=>setX({...x,owner:e.target.value})}/></div><button className="primary" onClick={async()=>{await onAdd({...x,id:`m_${Date.now()}`});setShow(false);}}>Save meeting</button></div>}<div className="meetingPageGrid">{items.map((m,i)=><div className="meetingCard" key={m.id}><div className="meetingTime"><b>{m.time}</b><span>{i%2?'PM':'AM'}</span></div><div><div className="eyebrow">{m.owner}</div><h3>{m.title}</h3><p>Operational meeting · Calendar context available to Relay.</p></div><span className="meetingStatus">Scheduled</span></div>)}</div></Page>; }
+function Meetings({ items, departments, onSaved }) {
+  const [show,setShow]=useState(false), [saving,setSaving]=useState(false);
+  const [x,setX]=useState({title:'',date:localDateKey(new Date()),time:'10:00',dept:departments[0]||''});
+  const save=async()=>{setSaving(true);try{const r=await fetch(`${API}/meetings/schedule`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...x})});const d=await r.json();if(!r.ok)throw Error(d.error||'Unable to schedule meeting');onSaved();setShow(false);}catch(e){alert(e.message)}finally{setSaving(false)}};
+  return <Page title="Meetings" sub="Schedule meetings by department and have Relay call the people who need the reminder." actions={<button className="primary" onClick={()=>setShow(!show)}>+ Schedule meeting</button>}>
+    {show&&<div className="darkForm"><div className="eyebrow">NEW MEETING</div><h3>Schedule & notify a department</h3><div className="formGrid"><input placeholder="Meeting title" value={x.title} onChange={e=>setX({...x,title:e.target.value})}/><input type="date" value={x.date} onChange={e=>setX({...x,date:e.target.value})}/><input type="time" value={x.time} onChange={e=>setX({...x,time:e.target.value})}/><select value={x.dept} onChange={e=>setX({...x,dept:e.target.value})}>{departments.map(d=><option key={d}>{d}</option>)}</select></div><p className="formHint">Relay will call every employee in the selected department with a meeting reminder.</p><button className="primary" disabled={saving} onClick={save}>{saving?'Calling attendees…':'Schedule & call attendees'}</button></div>}
+    <div className="meetingPageGrid">{items.slice().sort((a,b)=>`${a.date||''}${a.time}`.localeCompare(`${b.date||''}${b.time}`)).map(m=><div className="meetingCard" key={m.id}><div className="meetingTime"><b>{m.time}</b><span>{m.date||'Scheduled'}</span></div><div><div className="eyebrow">{m.dept||m.owner||'Company'}</div><h3>{m.title}</h3><p>{m.recipient_ids?.length||0} employees notified · {m.reminder_status||'Scheduled'}</p></div><span className={`meetingStatus ${m.reminder_status==='completed'?'done':''}`}>{m.reminder_status==='completed'?'Reminders sent':'Scheduled'}</span></div>)}</div>
+  </Page>;
+}
 
-function Memos({ items, onAdd }) { const [show,setShow]=useState(false); const [x,setX]=useState({title:'',body:'',status:'open'}); return <Page title="Memos" sub="Company-wide updates, policy changes and operational reminders." actions={<button className="primary" onClick={()=>setShow(!show)}>+ New memo</button>}>{show&&<div className="darkForm"><div className="formGrid"><input placeholder="Memo title" value={x.title} onChange={e=>setX({...x,title:e.target.value})}/><input placeholder="Status" value={x.status} onChange={e=>setX({...x,status:e.target.value})}/></div><textarea className="formTextarea" placeholder="Memo body" value={x.body} onChange={e=>setX({...x,body:e.target.value})}/><button className="primary" onClick={async()=>{await onAdd({...x,id:`memo_${Date.now()}`});setShow(false);}}>Publish memo</button></div>}<div className="memoPageGrid">{items.map(m=><div className="memoCard" key={m.id}><div className="memoIcon">▤</div><div><div className="eyebrow">COMPANY MEMO</div><h3>{m.title}</h3><p>{m.body}</p><small>{m.status} · operational notice</small></div></div>)}</div></Page>; }
+function Memos({ items, departments, onSaved }) {
+  const [show,setShow]=useState(false), [saving,setSaving]=useState(false);
+  const [x,setX]=useState({title:'',body:'',dept:departments[0]||'',status:'open'});
+  const save=async()=>{setSaving(true);try{const r=await fetch(`${API}/memos/publish`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(x)});const d=await r.json();if(!r.ok)throw Error(d.error||'Unable to publish memo');onSaved();setShow(false);}catch(e){alert(e.message)}finally{setSaving(false)}};
+  return <Page title="Memos" sub="Publish department-specific updates and let Relay deliver them by phone." actions={<button className="primary" onClick={()=>setShow(!show)}>+ New memo</button>}>
+    {show&&<div className="darkForm"><div className="eyebrow">NEW MEMO</div><h3>Create & notify a department</h3><div className="formGrid"><input placeholder="Memo title" value={x.title} onChange={e=>setX({...x,title:e.target.value})}/><select value={x.dept} onChange={e=>setX({...x,dept:e.target.value})}>{departments.map(d=><option key={d}>{d}</option>)}</select></div><textarea className="formTextarea" placeholder="Memo body" value={x.body} onChange={e=>setX({...x,body:e.target.value})}/><button className="primary" disabled={saving} onClick={save}>{saving?'Calling recipients…':'Publish & call recipients'}</button></div>}
+    <div className="memoPageGrid">{items.map(m=><div className="memoCard" key={m.id}><div className="memoIcon">▤</div><div><div className="eyebrow">{m.dept||'COMPANY'}</div><h3>{m.title}</h3><p>{m.body}</p><small>{m.status} · {m.recipient_ids?.length||0} recipients · {m.delivery_status||'open'}</small></div></div>)}</div>
+  </Page>;
+}
 
 function Calls({ logs }) { const [filter,setFilter]=useState('All'); const filtered=logs.filter(x=>filter==='All'||x.pillar===filter); return <Page title="Call Logs" sub="Every operational call, transcript, structured outcome and audit event in one place." actions={<div className="filterGroup">{['All','employee','customer','license'].map(x=><button key={x} className={filter===x?'selected':''} onClick={()=>setFilter(x)}>{x}</button>)}</div>}>{filtered.length?<div className="callList">{filtered.map(x=><div className="callCard" key={x.id}><div className="callHeader"><div><span className="callType">{actLabels[x.act]||x.act}</span><small>{x.pillar} · {x.entity_id} · {x.created_at}</small></div><span className={`statusPill ${x.status==='completed'?'green':'yellow'}`}>{x.status}</span></div><p>{x.summary}</p><details><summary>View transcript & structured result</summary><div className="transcript">{(x.transcript||[]).map((t,i)=><p key={i}><b>{t.speaker==='bot'?'Relay':'Recipient'}:</b> {t.text}</p>)}</div><pre>{JSON.stringify(x.structured_result,null,2)}</pre></details></div>)}</div>:<Empty text="No calls match this filter."/>}</Page>; }
 
 function Analytics({ state }) { const [a,setA]=useState(null); useEffect(()=>{fetch(`${API}/analytics`).then(r=>r.json()).then(setA)},[state.call_logs.length,state.employees.length,state.licenses.length]); if(!a)return <Page title="Analytics" sub="Leadership-level visibility into operational efficiency."><div className="loadingBox">Calculating analytics…</div></Page>; const totalSeats=state.licenses.reduce((s,x)=>s+x.seats_purchased,0),activeSeats=state.licenses.reduce((s,x)=>s+x.seats_active,0),util=totalSeats?Math.round(activeSeats/totalSeats*100):0; return <Page title="Analytics" sub="Leadership-level visibility into operational efficiency and optimization opportunities."><div className="sectionKpis"><SmallStat label="Employee present" value={a.employee_status.present} tone="green"/><SmallStat label="Call completion" value={`${a.calls.total?Math.round(a.calls.completed/a.calls.total*100):0}%`} tone="purple"/><SmallStat label="SaaS utilization" value={`${util}%`} tone="purple"/><SmallStat label="Unused spend" value={`$${a.software.unused_monthly_spend.toLocaleString()}`} tone="yellow"/></div><div className="analyticsGrid"><ChartPanel title="Employee status" data={a.employee_status}/><ChartPanel title="Calls by pillar" data={a.calls.by_pillar}/><ChartPanel title="Customer plans" data={a.customer_plans}/></div><div className="insightBanner"><div><div className="eyebrow">OPTIMIZATION SIGNAL</div><h3>{util < 70 ? 'Software utilization is below target.' : 'Software utilization is healthy.'}</h3><p>Relay found <strong>${a.software.unused_monthly_spend.toLocaleString()}/month</strong> in potential unused SaaS spend.</p></div><span className="insightNumber">{util}%</span></div></Page>; }
 function ChartPanel({ title, data }) { const max=Math.max(...Object.values(data),1); return <section className="chartPanel"><div className="panelTitle"><div><h3>{title}</h3><span>Current snapshot</span></div></div><div className="horizontalBars">{Object.entries(data).map(([k,v])=><div key={k}><div><span>{k.replaceAll('_',' ')}</span><b>{v}</b></div><i style={{width:`${v/max*100}%`}} /></div>)}</div></section>; }
 
-function Settings({ settings, onSaved }) { const labels={meeting_scheduler:'Meeting scheduler',employee_operations:'Employee operations',customer_lifecycle:'Customer lifecycle',vendor_optimization:'Vendor / SaaS optimizer',automatic_followups:'Automatic follow-ups'}; const desc={meeting_scheduler:'Manage upcoming meetings and scheduling workflows.',employee_operations:'Enable employee check-ins, attendance and offboarding calls.',customer_lifecycle:'Enable customer renewal and service lifecycle calls.',vendor_optimization:'Enable software utilization and renewal optimization calls.',automatic_followups:'Allow future workflows to create follow-up tasks.'}; const change=async(k,v)=>{await fetch(`${API}/settings`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:v})});onSaved()}; return <Page title="Settings" sub="Control which Relay capabilities are active for this company."><div className="settingsLayout"><div className="settingsIntro"><div className="settingsIcon">⚙</div><div><div className="eyebrow">AUTOMATION CONTROL CENTER</div><h2>Choose what Relay can operate</h2><p>These switches are enforced by the backend for call workflows. Turn a capability off to prevent its corresponding actions.</p></div></div><div className="settingsList">{Object.entries(settings).map(([k,v])=><div className="settingRow" key={k}><div className="settingIcon">{k==='employee_operations'?'♙':k==='customer_lifecycle'?'♧':k==='vendor_optimization'?'▣':k==='meeting_scheduler'?'□':'⌁'}</div><div className="settingCopy"><b>{labels[k]||k}</b><small>{desc[k]||''}</small></div><label className="switch"><input type="checkbox" checked={v} onChange={e=>change(k,e.target.checked)}/><span /></label></div>)}</div></div></Page>; }
+function Settings({ settings, onSaved }) { const labels={meeting_scheduler:'Meeting scheduler',memo_broadcast:'Memo broadcasts',employee_operations:'Employee operations',customer_lifecycle:'Customer lifecycle',vendor_optimization:'Vendor / SaaS optimizer',automatic_followups:'Automatic follow-ups'}; const desc={meeting_scheduler:'Manage upcoming meetings and department reminder workflows.',memo_broadcast:'Allow Relay to deliver department-specific memos by phone.',employee_operations:'Enable employee check-ins, attendance and offboarding calls.',customer_lifecycle:'Enable customer renewal and service lifecycle calls.',vendor_optimization:'Enable software utilization and renewal optimization calls.',automatic_followups:'Allow future workflows to create follow-up tasks.'}; const change=async(k,v)=>{await fetch(`${API}/settings`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:v})});onSaved()}; return <Page title="Settings" sub="Control which Relay capabilities are active for this company."><div className="settingsLayout"><div className="settingsIntro"><div className="settingsIcon">⚙</div><div><div className="eyebrow">AUTOMATION CONTROL CENTER</div><h2>Choose what Relay can operate</h2><p>These switches are enforced by the backend for call workflows. Turn a capability off to prevent its corresponding actions.</p></div></div><div className="settingsList">{Object.entries(settings).map(([k,v])=><div className="settingRow" key={k}><div className="settingIcon">{k==='employee_operations'?'♙':k==='customer_lifecycle'?'♧':k==='vendor_optimization'?'▣':k==='meeting_scheduler'?'□':k==='memo_broadcast'?'▤':'⌁'}</div><div className="settingCopy"><b>{labels[k]||k}</b><small>{desc[k]||''}</small></div><label className="switch"><input type="checkbox" checked={v} onChange={e=>change(k,e.target.checked)}/><span /></label></div>)}</div></div></Page>; }
 
-function Heatmap({ employees }) { const statuses=['present','remote','late','absent','leave']; const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun']; return <div className="heatmap"><div className="heatAxis">{['9am','11am','1pm','3pm','5pm'].map(x=><span key={x}>{x}</span>)}</div><div className="heatBody">{statuses.map((s,row)=><div className="heatRow" key={s}>{days.map((d,col)=>{const base=employees[(row+col)%Math.max(employees.length,1)]?.attendance_status; const intensity=base===s?3:(col+row)%4===0?1:0; return <i key={`${d}-${row}`} className={`heat ${s} i${intensity}`} title={`${d} ${s}`} />})}</div>)}<div className="dayLabels">{days.map(d=><span key={d}>{d}</span>)}</div></div><div className="legend"><span><i className="dot green"/>Present</span><span><i className="dot purple"/>Remote</span><span><i className="dot lavender"/>Late</span><span><i className="dot red"/>Absent</span><span><i className="dot gray"/>On leave</span></div></div>; }
+function MeetingHeatmap({ meetings }) {
+  const base=new Date(); base.setHours(0,0,0,0);
+  const days=Array.from({length:5},(_,i)=>{const d=new Date(base);d.setDate(base.getDate()+i);return d;});
+  const hours=[10,11,12,13,14,15,16,17];
+  const key=d=>localDateKey(d);
+  const label=d=>d.toLocaleDateString(undefined,{weekday:'short',day:'numeric'});
+  const count=(d,h)=>meetings.filter(m=>(m.date||'')===key(d)&&parseInt((m.time||'').split(':')[0],10)===h).length;
+  return <div className="meetingHeatmap"><div className="heatHeader"><span>TIME</span>{days.map(d=><b key={key(d)} className={key(d)===key(base)?'today':''}>{label(d)}{key(d)===key(base)&&<em>Today</em>}</b>)}</div><div className="heatRows">{hours.map(h=><div className="heatLine" key={h}><span>{h<=12?`${h}am`:`${h-12}pm`}</span>{days.map(d=>{const n=count(d,h);return <i key={key(d)+h} className={`meetingCell i${Math.min(n,4)}`} title={`${n} meeting${n===1?'':'s'} · ${label(d)} · ${h}:00`}>{n||''}</i>})}</div>)}</div><div className="heatLegend"><span><i className="meetingCell i0"/>None</span><span><i className="meetingCell i1"/>1</span><span><i className="meetingCell i2"/>2</span><span><i className="meetingCell i3"/>3+</span></div></div>;
+}
+
 function MeetingPreview({ meetings }) { return <div className="previewList">{meetings.slice(0,4).map(m=><div className="meetingPreview" key={m.id}><time>{m.time}</time><div><b>{m.title}</b><small>{m.owner}</small></div><span>Scheduled</span></div>)}</div>; }
-function MemoPreview({ memos }) { return <div className="previewList">{memos.slice(0,4).map(m=><div className="memoPreview" key={m.id}><div className="memoMiniIcon">▤</div><div><b>{m.title}</b><small>{m.status} · company update</small></div></div>)}</div>; }
+function MemoPreview({ memos }) { return <div className="previewList">{memos.slice(0,4).map(m=><div className="memoPreview" key={m.id}><div className="memoMiniIcon">▤</div><div><b>{m.title}</b><small>{m.dept||'Company'} · {m.status}</small></div></div>)}</div>; }
 function MiniBars({ items }) { const max=Math.max(...items.map(x=>x.value),1); return <div className="miniBars">{items.map(x=><div className="miniBar" key={x.name} title={`${x.name}: $${x.value}`}><i style={{height:`${Math.max(18,x.value/max*100)}%`}} /><span>{x.name.split(' ')[0]}</span></div>)}</div>; }
 function LineChart({ values, labels }) { const w=420,h=118,p=7; const max=Math.max(...values),min=Math.min(...values); const pts=values.map((v,i)=>`${p+i*(w-2*p)/(values.length-1)},${h-p-(v-min)/Math.max(max-min,1)*(h-2*p)}`).join(' '); const area=`${p},${h-p} ${pts} ${w-p},${h-p}`; return <div className="lineChart"><svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none"><polygon points={area} className="chartArea"/><polyline points={pts} className="chartLine"/><circle cx={w-p} cy={h-p-(values.at(-1)-min)/Math.max(max-min,1)*(h-2*p)} r="3.5" className="chartDot"/></svg><div className="chartLabels">{labels.map(x=><span key={x}>{x}</span>)}</div></div>; }
 function Page({ title, sub, children, actions }) { return <div className="page"><div className="pageTitle"><div><div className="eyebrow">RELAY WORKSPACE</div><h1>{title}</h1><p>{sub}</p></div>{actions && <div className="pageTitleActions">{actions}</div>}</div>{children}</div>; }
@@ -300,6 +336,7 @@ function Fact({label,value,warning}){return <div><span>{label}</span><b classNam
 function Status({value}){const labels={present:'Present',absent:'Absent',late:'Late',remote:'Remote',leave:'On leave',unknown:'Not checked in',not_checked_in:'Not checked in'};return <span className={`statusPill ${value==='absent'||value==='unknown'||value==='not_checked_in'?'red':value==='late'?'yellow':value==='remote'?'purple':'green'}`}>{labels[value]||value}</span>}
 function Empty({text}){return <div className="empty">{text}</div>}
 function initials(name=''){return name.split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase();}
+function localDateKey(d){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');const day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
 function daysUntil(date){const t=new Date(date+'T00:00:00');const n=new Date();n.setHours(0,0,0,0);return Math.ceil((t-n)/86400000);}
 function Loading(){return <div className="loadingBox">Loading…</div>}
 

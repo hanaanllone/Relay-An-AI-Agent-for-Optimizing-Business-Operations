@@ -35,3 +35,67 @@
   object-fit: contain;
   flex-shrink: 0;
 }
+/* --- Relay home dashboard v2 --- */
+.fiveKpis{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+.homeGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-rows:minmax(190px,auto) minmax(190px,auto);
+  gap:14px;
+  margin-bottom:14px;
+}
+.homeGrid>.meetingsLarge{grid-column:1 / span 2;grid-row:1 / span 2;min-height:420px}
+.homeGrid>.memosPanel{grid-column:3;grid-row:1;min-height:190px}
+.homeGrid>.renewalsPanel{grid-column:4;grid-row:1;min-height:190px}
+.homeGrid>.unusedPanel{grid-column:3 / span 2;grid-row:2;min-height:190px}
+.meetingHeatmap{width:100%;padding-top:4px}
+.heatHeader{display:grid;grid-template-columns:46px repeat(5,minmax(0,1fr));gap:6px;align-items:end;margin-bottom:8px}
+.heatHeader>span{font-size:8px;color:#555a6a;letter-spacing:.8px}
+.heatHeader>b{font-size:9px;color:#7f8494;text-align:center;font-weight:600;position:relative;padding-bottom:3px}
+.heatHeader>b.today{color:#b99cff}
+.heatHeader em{display:block;font-size:7px;color:#8b5cf6;font-style:normal;font-weight:500;margin-top:3px}
+.heatRows{display:flex;flex-direction:column;gap:6px}
+.heatLine{display:grid;grid-template-columns:46px repeat(5,minmax(0,1fr));gap:6px;align-items:center}
+.heatLine>span{font-size:8px;color:#626777}
+.meetingCell{height:31px;border-radius:7px;border:1px solid #1d202a;background:#171920;display:grid;place-items:center;color:#dcd4ff;font-size:8px;font-style:normal;transition:.15s}
+.meetingCell.i1{background:#27184b;border-color:#33215c}
+.meetingCell.i2{background:#4b25a1;border-color:#5b31bd}
+.meetingCell.i3{background:#7540df;border-color:#7f4be9;box-shadow:inset 0 0 14px rgba(183,145,255,.13)}
+.meetingCell.i4{background:#9c7af1;border-color:#a88df5;color:#100d19}
+.heatLegend{display:flex;gap:13px;margin-top:14px;color:#676c7b;font-size:8px;align-items:center}
+.heatLegend span{display:flex;align-items:center;gap:5px}
+.heatLegend .meetingCell{width:15px;height:15px;border-radius:4px}
+.renewalBig{font-size:32px;line-height:1;margin:4px 0 15px}
+.renewalBig small{display:block;font-size:9px;color:#707585;margin-top:7px}
+.renewalRows{display:flex;flex-direction:column;gap:7px}
+.renewalRows>div{display:flex;justify-content:space-between;border-top:1px solid #20232d;padding-top:7px;color:#9296a5;font-size:9px}
+.renewalRows b{color:#c0a8ff;font-weight:600}
+.unusedHero strong{display:block;font-size:31px;letter-spacing:-1px}
+.unusedHero strong small{font-size:12px;color:#777c8c;margin-left:3px}
+.unusedHero span{display:block;color:#777c8c;font-size:9px;margin:7px 0 10px}
+.unusedPanel .miniBars{height:65px;margin-top:5px}
+.homeLower{display:grid;grid-template-columns:1.2fr 1fr;gap:14px;margin-bottom:14px}
+.optimizationRows{display:flex;flex-direction:column}
+.optimizationRows>div{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #20232d}
+.optimizationRows>div:last-child{border-bottom:0}
+.optimizationRows b,.optimizationRows small{display:block}
+.optimizationRows b{font-size:10px}
+.optimizationRows small{font-size:8px;color:#6f7484;margin-top:3px}
+.optimizationRows strong{font-size:11px;color:#b99eff}
+.formHint{font-size:9px;color:#707585;margin:10px 0 12px;line-height:1.5}
+.darkForm select{width:100%;background:#0b0d13;color:#dfe2ea;border:1px solid #272b37;border-radius:7px;padding:10px;outline:none;font-size:10px}
+.meetingStatus.done{color:var(--green)}
+.relayIcon{width:38px;height:38px;object-fit:contain;flex-shrink:0}
+.loginLogo{object-fit:contain;max-height:80px}
+@media(max-width:1100px){
+  .fiveKpis{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .homeGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .homeGrid>.meetingsLarge{grid-column:1 / span 2;grid-row:auto}
+  .homeGrid>.memosPanel,.homeGrid>.renewalsPanel{grid-column:auto;grid-row:auto}
+  .homeGrid>.unusedPanel{grid-column:1 / span 2;grid-row:auto}
+}
+@media(max-width:760px){
+  .sidebar{width:72px}.sidebar .brandName,.sidebar .brandTag,.sidebar .navLabel,.sidebar .navItem>span:not(.navIcon),.workspaceCard,.userRow strong,.userRow small{display:none}
+  .brandBlock{justify-content:center;padding:0 0 25px}.mainArea{margin-left:72px;width:calc(100% - 72px)}.topHeader{padding:0 16px}.searchWrap{width:50%}
+  .fiveKpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}.homeGrid,.homeLower{grid-template-columns:1fr}.homeGrid>.meetingsLarge,.homeGrid>.unusedPanel{grid-column:1}
+}

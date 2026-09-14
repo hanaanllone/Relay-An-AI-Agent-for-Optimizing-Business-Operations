@@ -88,6 +88,10 @@ def apply_result(pillar,act,e,result):
     if pillar=='employee' and act=='checkin':
         s=r.get('checkin_status'); mapping={'remote_today':'remote','on_leave':'leave','running_late':'late','forgot_to_checkin':'present','escalate':'absent'}
         updates={'checkin_status':s,'attendance_status':mapping.get(s,e.get('attendance_status')),'last_call_outcome':r.get('reason',''),'flag':None if s in ('remote_today','on_leave','forgot_to_checkin') else ('Escalation required' if s=='escalate' else e.get('flag'))}
+    elif pillar=='employee' and act=='meeting-reminder':
+        updates={'last_meeting_reminder':r.get('response',''),'last_meeting_reminder_status':r.get('attendance','unknown')}
+    elif pillar=='employee' and act=='memo':
+        updates={'last_memo_response':r.get('response',''),'last_memo_acknowledged':r.get('acknowledged','unknown')}
     elif pillar=='employee' and act=='offboard':
         updates={'offboarding_status':r.get('handoff_status'),'equipment_return':r.get('equipment_return'),'tool_access_confirmed':r.get('tool_access_confirmed'),'flag':None if r.get('handoff_status')=='confirmed' else 'Follow-up needed'}
     elif pillar=='customer' and act=='renewal':
@@ -99,7 +103,7 @@ def apply_result(pillar,act,e,result):
         try: seats=int(r.get('seats_after_call',''))
         except: seats=None
         if seats is not None and seats>=0: updates['seats_purchased']=seats
-        updates['last_call_decision']=r.get('decision'); updates['monthly_cost_after_call']=float(r.get('monthly_cost_after_call',0) or 0); updates['flag']=None if r.get('decision') in ('renew_as_is','downgrade','cancel') else e.get('flag')
+        updates['last_call_decision']=r.get('decision'); updates['monthly_cost_after_call']=float(r.get('monthly_cost_after_call',0) or 0); updates['optimization_status']='optimized'; updates['optimized_at']=now(); updates['flag']=None if r.get('decision') in ('renew_as_is','downgrade','cancel') else e.get('flag')
     updated=update_entity(pillar,e['id'],updates) if updates else e
     if pillar=='employee' and act=='offboard' and r.get('handoff_status')=='confirmed':
         for lic in get_state()['licenses']:
@@ -108,57 +112,80 @@ def apply_result(pillar,act,e,result):
                 new=max(0,lic['seats_purchased']-1); update_entity('license',lic['id'],{'seats_purchased':new,'flag':'Seat reclaimed','_reclaim_reason':e['name']+' offboarding'}); add_log('license',f"{lic['tool']} seat reclaimed after {e['name']} offboarding",True); break
     return updated
 
+
+def execute_call(pillar, entity_id, act, context=None):
+    e=entity(pillar,entity_id)
+    if not e: raise ValueError('entity not found')
+    settings=get_state()['settings']; feature=FEATURE_FOR.get(pillar)
+    if feature and not settings.get(feature,True): raise PermissionError(f'{feature.replace("_"," ").title()} is disabled in Settings')
+    target_phone=e.get('phone') or e.get('owner_phone')
+    if not target_phone: raise ValueError('entity has no phone number')
+    call_entity=dict(e); call_entity['phone']=target_phone
+    state=get_state(); task,schema=build(pillar,act,e,state['policies'],context)
+    metadata={'pillar':pillar,'entityId':entity_id,'act':act}
+    created=create_call(task,call_entity,schema,metadata); call_id=created['id']
+    if DRY_RUN:
+        result=simulate(pillar,act,e,context)
+        save_call(call_id,pillar,entity_id,act,result,result['status'],result['created_at'],result['completed_at'],True)
+        apply_result(pillar,act,e,result)
+        add_log(pillar,f"{e.get('name') or e.get('tool')} — {result['summary']}")
+        return {'callId':call_id,'dryRun':True,'call':result}
+    save_call(call_id,pillar,entity_id,act,{'summary':'Call started','structured_result':None,'transcript':[]},created.get('status','queued'),now(),None,False)
+    add_log(pillar,f"{e.get('name') or e.get('tool')} — call placed via CALL-E")
+    return {'callId':call_id,'dryRun':False}
+
+@app.post('/api/meetings/schedule')
+def schedule_meeting():
+    body=request.get_json() or {}
+    title=body.get('title','').strip(); date=body.get('date',''); tm=body.get('time',''); dept=body.get('dept','').strip()
+    if not title or not date or not tm or not dept: return jsonify({'error':'title, date, time and department are required'}),400
+    settings=get_state()['settings']
+    if not settings.get('meeting_scheduler',True): return jsonify({'error':'Meeting scheduler is disabled in Settings'}),403
+    conn=connect(); employees=[json.loads(r['data']) for r in conn.execute('SELECT data FROM employees ORDER BY rowid') if json.loads(r['data']).get('dept')==dept]; conn.close()
+    meeting={'id':body.get('id') or f'm_{int(time.time()*1000)}','title':title,'date':date,'time':tm,'dept':dept,'owner':dept,'recipient_ids':[e['id'] for e in employees],'reminder_calls':[],'reminder_status':'pending'}
+    upsert_entity('meeting',meeting)
+    errors=[]
+    for e in employees:
+        try: meeting['reminder_calls'].append(execute_call('employee',e['id'],'meeting-reminder',{'title':title,'date':date,'time':tm})['callId'])
+        except Exception as ex: errors.append(f"{e['name']}: {ex}")
+    meeting['reminder_status']='completed' if employees and not errors else ('no_recipients' if not employees else 'partial')
+    upsert_entity('meeting',meeting)
+    add_log('meeting',f"{title} scheduled for {dept}; called {len(employees)-len(errors)} of {len(employees)} employees")
+    return jsonify({'meeting':meeting,'called':len(employees)-len(errors),'errors':errors}),201
+
+@app.post('/api/memos/publish')
+def publish_memo():
+    body=request.get_json() or {}
+    title=body.get('title','').strip(); memo_body=body.get('body','').strip(); dept=body.get('dept','').strip()
+    if not title or not memo_body or not dept: return jsonify({'error':'title, body and department are required'}),400
+    settings=get_state()['settings']
+    if not settings.get('memo_broadcast',True): return jsonify({'error':'Memo broadcasts are disabled in Settings'}),403
+    conn=connect(); employees=[json.loads(r['data']) for r in conn.execute('SELECT data FROM employees ORDER BY rowid') if json.loads(r['data']).get('dept')==dept]; conn.close()
+    memo={'id':body.get('id') or f'memo_{int(time.time()*1000)}','title':title,'body':memo_body,'dept':dept,'status':'open','recipient_ids':[e['id'] for e in employees],'delivery_calls':[],'delivery_status':'pending'}
+    upsert_entity('memo',memo)
+    errors=[]
+    for e in employees:
+        try: memo['delivery_calls'].append(execute_call('employee',e['id'],'memo',{'title':title,'body':memo_body})['callId'])
+        except Exception as ex: errors.append(f"{e['name']}: {ex}")
+    memo['delivery_status']='completed' if employees and not errors else ('no_recipients' if not employees else 'partial')
+    upsert_entity('memo',memo)
+    add_log('memo',f"{title} published to {dept}; called {len(employees)-len(errors)} of {len(employees)} employees")
+    return jsonify({'memo':memo,'called':len(employees)-len(errors),'errors':errors}),201
+
 @app.post('/api/trigger-call')
 def trigger():
-    body=request.get_json() or {}; pillar,entity_id,act=body.get('pillar'),body.get('entityId'),body.get('act'); e=entity(pillar,entity_id)
-    if not e: return jsonify({'error':'entity not found'}),404
-    settings=get_state()['settings']; feature=FEATURE_FOR.get(pillar)
-    if feature and not settings.get(feature,True): return jsonify({'error':f'{feature.replace("_"," ").title()} is disabled in Settings'}),403
-    target_phone=e.get('phone') or e.get('owner_phone')
-    if not target_phone: return jsonify({'error':'entity has no phone number'}),400
-    # CALL-E receives the actual target number, while Relay provides policy/context.
-    call_entity=dict(e); call_entity['phone']=target_phone
-    state=get_state(); task,schema=build(pillar,act,e,state['policies']); metadata={'pillar':pillar,'entityId':entity_id,'act':act}
+    body=request.get_json() or {}
+    pillar,entity_id,act=body.get('pillar'),body.get('entityId'),body.get('act')
     try:
-        created=create_call(task,call_entity,schema,metadata); call_id=created['id']
-        if DRY_RUN:
-            result=simulate(pillar,act,e); save_call(call_id,pillar,entity_id,act,result,result['status'],result['created_at'],result['completed_at'],True); apply_result(pillar,act,e,result); add_log(pillar,f"{e.get('name') or e.get('tool')} — {result['summary']}"); return jsonify({'callId':call_id,'dryRun':True,'call':result})
-        save_call(call_id,pillar,entity_id,act,{'summary':'Call started','structured_result':None,'transcript':[]},created.get('status','queued'),now(),None,False); add_log(pillar,f"{e.get('name') or e.get('tool')} — call placed via CALL-E"); return jsonify({'callId':call_id,'dryRun':False})
+        return jsonify(execute_call(pillar,entity_id,act))
+    except PermissionError as ex: return jsonify({'error':str(ex)}),403
+    except ValueError as ex: return jsonify({'error':str(ex)}),400
     except Exception as ex: return jsonify({'error':str(ex)}),500
 
-@app.get('/api/calls/<call_id>')
-def call_status(call_id):
-    conn=connect(); row=conn.execute('SELECT * FROM call_logs WHERE id=?',(call_id,)).fetchone(); conn.close()
-    if not row: return jsonify({'error':'unknown call'}),404
-    if row['dry_run']: return jsonify({'id':call_id,'status':row['status'],'summary':row['summary'],'structured_result':json.loads(row['structured_result']) if row['structured_result'] else None,'transcript':json.loads(row['transcript']) if row['transcript'] else []})
-    try:
-        raw=get_call(call_id); status=raw.get('status'); result={'summary':raw.get('summary'),'structured_result':raw.get('structured_result'),'transcript':sum([a.get('transcript_turns',[]) for r in raw.get('recipients',[]) for a in r.get('attempts',[])],[])}
-        if status in ('completed','failed','canceled'):
-            e=entity(row['pillar'],row['entity_id']); save_call(call_id,row['pillar'],row['entity_id'],row['act'],result,status,row['created_at'],raw.get('completed_at'),False)
-            if status=='completed' and e: apply_result(row['pillar'],row['act'],e,result); add_log(row['pillar'],f"{e.get('name') or e.get('tool')} — {result.get('summary') or status}")
-        return jsonify(raw)
-    except Exception as ex: return jsonify({'error':str(ex)}),500
-
-@app.post('/calle/webhook')
-def webhook():
-    event=request.get_json() or {}; event_id=request.headers.get('CALL-E-Event-Id')
-    if not event_id or event_id != event.get('id'): return jsonify({'error':'invalid event id'}),400
-    if event.get('type') not in ('call.completed','call.failed','call.result_validation_failed'): return jsonify({'ok':True})
-    data=event.get('data') or {}; call_id=data.get('id'); conn=connect(); row=conn.execute('SELECT * FROM call_logs WHERE id=?',(call_id,)).fetchone(); conn.close()
-    if row:
-        result={'summary':data.get('summary'),'structured_result':data.get('structured_result') or data.get('structuredResult'),'transcript':sum([a.get('transcript_turns',a.get('transcriptTurns',[])) for r in data.get('recipients',[]) for a in r.get('attempts',[])],[])}
-        e=entity(row['pillar'],row['entity_id']); save_call(call_id,row['pillar'],row['entity_id'],row['act'],result,data.get('status','completed'),row['created_at'],data.get('completed_at'),False)
-        if data.get('status')=='completed' and e: apply_result(row['pillar'],row['act'],e,result); add_log(row['pillar'],f"{e.get('name') or e.get('tool')} — {result.get('summary') or 'call completed'}")
-    return jsonify({'ok':True})
-
-FRONT=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),'frontend','dist')
-@app.route('/',defaults={'path':''})
-@app.route('/<path:path>')
-def frontend(path):
-    if os.path.isdir(FRONT):
-        target=os.path.join(FRONT,path)
-        if path and os.path.isfile(target): return send_from_directory(FRONT,path)
-        return send_from_directory(FRONT,'index.html')
-    return jsonify({'message':'Relay API is running. Start the React frontend with npm run dev.'})
-
-if __name__=='__main__': app.run(host='0.0.0.0',port=int(os.getenv('FLASK_PORT','5000')),debug=True)
+if __name__ == '__main__':
+    print('Starting Relay backend...')
+    app.run(
+        host='0.0.0.0',
+        port=int(os.getenv('FLASK_PORT', '5000')),
+        debug=True
+    )

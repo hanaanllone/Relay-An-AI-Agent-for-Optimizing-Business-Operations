@@ -1,41 +1,326 @@
 {
-  "company": {"id":"company-demo","name":"Northstar Labs","email":"admin@relaydemo.com","password":"demo123"},
-  "settings": {"meeting_scheduler":true,"employee_operations":true,"customer_lifecycle":true,"vendor_optimization":true,"automatic_followups":true},
+  "company": {
+    "id": "company-demo",
+    "name": "Northstar Labs",
+    "email": "admin@relaydemo.com",
+    "password": "demo123"
+  },
+  "settings": {
+    "meeting_scheduler": true,
+    "employee_operations": true,
+    "customer_lifecycle": true,
+    "vendor_optimization": true,
+    "automatic_followups": true,
+    "memo_broadcast": true
+  },
   "policies": {
-    "employee":"# Employee Policy\n\nEmployees should record attendance by 10:00 AM. Approved remote work and leave should be recorded in the company system. Routine check-in calls are supportive, not disciplinary. Sensitive HR, safety, payroll, or conduct matters should be escalated.\n\nDuring offboarding, Relay may confirm equipment return and software access closeout.",
-    "customer":"# Customer Policy\n\nCustomers may renew, downgrade, change plans, or cancel. Relay may offer one honest lower-cost alternative before cancellation, but must never obstruct a confirmed cancellation. Failed payments and service issues should be escalated when required.",
-    "marketing":"# Marketing Policy\n\nRelay may explain approved products, pricing, promotions, and plan differences. Never invent discounts, guarantees, capabilities, or deadlines. Respect opt-outs and escalate sensitive commercial requests.",
-    "vendor":"# Software / Vendor Policy\n\nReview software with under 50% utilization before renewal. Unused seats are purchased seats minus active seats. Unused monthly spend is unused seats multiplied by monthly cost per seat. Department owners may renew, reduce seats, or cancel based on usage and business need."
+    "employee": "# Employee Policy\n\nEmployees should record attendance by 10:00 AM. Approved remote work and leave should be recorded in the company system. Routine check-in calls are supportive, not disciplinary. Sensitive HR, safety, payroll, or conduct matters should be escalated.\n\nDuring offboarding, Relay may confirm equipment return and software access closeout.",
+    "customer": "# Customer Policy\n\nCustomers may renew, downgrade, change plans, or cancel. Relay may offer one honest lower-cost alternative before cancellation, but must never obstruct a confirmed cancellation. Failed payments and service issues should be escalated when required.",
+    "marketing": "# Marketing Policy\n\nRelay may explain approved products, pricing, promotions, and plan differences. Never invent discounts, guarantees, capabilities, or deadlines. Respect opt-outs and escalate sensitive commercial requests.",
+    "vendor": "# Software / Vendor Policy\n\nReview software with under 50% utilization before renewal. Unused seats are purchased seats minus active seats. Unused monthly spend is unused seats multiplied by monthly cost per seat. Department owners may renew, reduce seats, or cancel based on usage and business need."
   },
   "employees": [
-    {"id":"e1","name":"Ethan Brooks","role":"Backend Engineer","dept":"Engineering","phone":"+15550101001","attendance_status":"absent","checkin_status":"no_checkin","note":"No check-in recorded at 9:15 AM.","flag":"No check-in","assigned_software":["GitHub Enterprise","Slack"],"upcoming_meetings":"Engineering Standup · 09:30"},
-    {"id":"e2","name":"Claire Morgan","role":"Product Designer","dept":"Design","phone":"+15550101002","attendance_status":"present","checkin_status":"on_time","note":"Checked in on time.","flag":null,"assigned_software":["Figma","Slack"],"upcoming_meetings":"Product Review · 14:00"},
-    {"id":"e3","name":"Daniel Reed","role":"Account Executive","dept":"Sales","phone":"+15550101003","attendance_status":"present","checkin_status":"on_time","note":"Last working day today.","flag":"Offboarding today","assigned_software":["Salesforce","Slack"],"upcoming_meetings":"Offboarding handoff · 16:00","offboarding_status":"pending"},
-    {"id":"e4","name":"Sophie Turner","role":"Data Analyst","dept":"Analytics","phone":"+15550101004","attendance_status":"remote","checkin_status":"remote_today","note":"Approved remote schedule.","flag":null,"assigned_software":["Snowflake","Slack"],"upcoming_meetings":"Analytics Sync · 11:30"},
-    {"id":"e5","name":"Marcus Lee","role":"Engineering Manager","dept":"Engineering","phone":"+15550101005","attendance_status":"late","checkin_status":"running_late","note":"Running late; manager informed.","flag":"Running late","assigned_software":["GitHub Enterprise","Slack"],"upcoming_meetings":"Engineering Standup · 09:30"},
-    {"id":"e6","name":"Olivia Carter","role":"People Operations Lead","dept":"People","phone":"+15550101006","attendance_status":"leave","checkin_status":"on_leave","note":"Approved annual leave.","flag":null,"assigned_software":["Slack","Zoom"],"upcoming_meetings":"None"}
+    {
+      "id": "e1",
+      "name": "Ethan Brooks",
+      "role": "Backend Engineer",
+      "dept": "Engineering",
+      "phone": "+15550101001",
+      "attendance_status": "absent",
+      "checkin_status": "no_checkin",
+      "note": "No check-in recorded at 9:15 AM.",
+      "flag": "No check-in",
+      "assigned_software": [
+        "GitHub Enterprise",
+        "Slack"
+      ],
+      "upcoming_meetings": "Engineering Standup \u00b7 09:30"
+    },
+    {
+      "id": "e2",
+      "name": "Claire Morgan",
+      "role": "Product Designer",
+      "dept": "Design",
+      "phone": "+15550101002",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Checked in on time.",
+      "flag": null,
+      "assigned_software": [
+        "Figma",
+        "Slack"
+      ],
+      "upcoming_meetings": "Product Review \u00b7 14:00"
+    },
+    {
+      "id": "e3",
+      "name": "Daniel Reed",
+      "role": "Account Executive",
+      "dept": "Sales",
+      "phone": "+15550101003",
+      "attendance_status": "present",
+      "checkin_status": "on_time",
+      "note": "Last working day today.",
+      "flag": "Offboarding today",
+      "assigned_software": [
+        "Salesforce",
+        "Slack"
+      ],
+      "upcoming_meetings": "Offboarding handoff \u00b7 16:00",
+      "offboarding_status": "pending"
+    },
+    {
+      "id": "e4",
+      "name": "Sophie Turner",
+      "role": "Data Analyst",
+      "dept": "Analytics",
+      "phone": "+15550101004",
+      "attendance_status": "remote",
+      "checkin_status": "remote_today",
+      "note": "Approved remote schedule.",
+      "flag": null,
+      "assigned_software": [
+        "Snowflake",
+        "Slack"
+      ],
+      "upcoming_meetings": "Analytics Sync \u00b7 11:30"
+    },
+    {
+      "id": "e5",
+      "name": "Marcus Lee",
+      "role": "Engineering Manager",
+      "dept": "Engineering",
+      "phone": "+15550101005",
+      "attendance_status": "late",
+      "checkin_status": "running_late",
+      "note": "Running late; manager informed.",
+      "flag": "Running late",
+      "assigned_software": [
+        "GitHub Enterprise",
+        "Slack"
+      ],
+      "upcoming_meetings": "Engineering Standup \u00b7 09:30"
+    },
+    {
+      "id": "e6",
+      "name": "Olivia Carter",
+      "role": "People Operations Lead",
+      "dept": "People",
+      "phone": "+15550101006",
+      "attendance_status": "leave",
+      "checkin_status": "on_leave",
+      "note": "Approved annual leave.",
+      "flag": null,
+      "assigned_software": [
+        "Slack",
+        "Zoom"
+      ],
+      "upcoming_meetings": "None"
+    }
   ],
   "customers": [
-    {"id":"c1","name":"Avery Wilson","customer_company":"Vertex Commerce","phone":"+15550101101","plan":"Premium","renewal_date":"2026-09-16","renewal_status":"pending","customer_status":"Active","usage":"High","recent_issue":"No open issues","note":"Renewal approaching; strong usage.","flag":"Renewal due"},
-    {"id":"c2","name":"Noah Bennett","customer_company":"Lighthouse Systems","phone":"+15550101102","plan":"Standard","renewal_date":"2026-09-18","renewal_status":"at_risk","customer_status":"At risk","usage":"Medium","recent_issue":"Two pricing tickets this month","note":"Customer has raised pricing concerns.","flag":"At risk"},
-    {"id":"c3","name":"Emma Collins","customer_company":"Harbor Health Tech","phone":"+15550101103","plan":"Enterprise","renewal_date":"2026-10-11","renewal_status":"active","customer_status":"Active","usage":"High","recent_issue":"Resolved support issue","note":"Good account health; collect feedback.","flag":null}
+    {
+      "id": "c1",
+      "name": "Avery Wilson",
+      "customer_company": "Vertex Commerce",
+      "phone": "+15550101101",
+      "plan": "Premium",
+      "renewal_date": "2026-09-16",
+      "renewal_status": "pending",
+      "customer_status": "Active",
+      "usage": "High",
+      "recent_issue": "No open issues",
+      "note": "Renewal approaching; strong usage.",
+      "flag": "Renewal due"
+    },
+    {
+      "id": "c2",
+      "name": "Noah Bennett",
+      "customer_company": "Lighthouse Systems",
+      "phone": "+15550101102",
+      "plan": "Standard",
+      "renewal_date": "2026-09-18",
+      "renewal_status": "at_risk",
+      "customer_status": "At risk",
+      "usage": "Medium",
+      "recent_issue": "Two pricing tickets this month",
+      "note": "Customer has raised pricing concerns.",
+      "flag": "At risk"
+    },
+    {
+      "id": "c3",
+      "name": "Emma Collins",
+      "customer_company": "Harbor Health Tech",
+      "phone": "+15550101103",
+      "plan": "Enterprise",
+      "renewal_date": "2026-10-11",
+      "renewal_status": "active",
+      "customer_status": "Active",
+      "usage": "High",
+      "recent_issue": "Resolved support issue",
+      "note": "Good account health; collect feedback.",
+      "flag": null
+    }
   ],
   "licenses": [
-    {"id":"l1","tool":"Figma","dept":"Design","owner":"Maya Carter","owner_phone":"+15550101201","phone":"+15550101201","seats_purchased":40,"seats_active":12,"cost_per_seat":20,"renewal_date":"2026-09-19","note":"Renews in 5 days.","flag":"Low utilization"},
-    {"id":"l2","tool":"Slack","dept":"Engineering","owner":"Marcus Lee","owner_phone":"+15550101005","phone":"+15550101005","seats_purchased":120,"seats_active":110,"cost_per_seat":8,"renewal_date":"2026-10-02","note":"High utilization.","flag":null},
-    {"id":"l3","tool":"GitHub Enterprise","dept":"Engineering","owner":"Marcus Lee","owner_phone":"+15550101005","phone":"+15550101005","seats_purchased":85,"seats_active":63,"cost_per_seat":21,"renewal_date":"2026-10-07","note":"Review before renewal.","flag":"Review recommended"},
-    {"id":"l4","tool":"Zoom","dept":"People","owner":"Olivia Carter","owner_phone":"+15550101006","phone":"+15550101006","seats_purchased":55,"seats_active":22,"cost_per_seat":15,"renewal_date":"2026-09-28","note":"Large unused capacity.","flag":"Low utilization"},
-    {"id":"l5","tool":"Salesforce","dept":"Sales","owner":"Jordan Miller","owner_phone":"+15550101301","phone":"+15550101301","seats_purchased":30,"seats_active":24,"cost_per_seat":75,"renewal_date":"2026-11-01","note":"Healthy utilization.","flag":null}
+    {
+      "id": "l1",
+      "tool": "Figma",
+      "dept": "Design",
+      "owner": "Maya Carter",
+      "owner_phone": "+15550101201",
+      "phone": "+15550101201",
+      "seats_purchased": 40,
+      "seats_active": 12,
+      "cost_per_seat": 20,
+      "renewal_date": "2026-09-19",
+      "note": "Renews in 5 days.",
+      "flag": "Low utilization"
+    },
+    {
+      "id": "l2",
+      "tool": "Slack",
+      "dept": "Engineering",
+      "owner": "Marcus Lee",
+      "owner_phone": "+15550101005",
+      "phone": "+15550101005",
+      "seats_purchased": 120,
+      "seats_active": 110,
+      "cost_per_seat": 8,
+      "renewal_date": "2026-10-02",
+      "note": "High utilization.",
+      "flag": null
+    },
+    {
+      "id": "l3",
+      "tool": "GitHub Enterprise",
+      "dept": "Engineering",
+      "owner": "Marcus Lee",
+      "owner_phone": "+15550101005",
+      "phone": "+15550101005",
+      "seats_purchased": 85,
+      "seats_active": 63,
+      "cost_per_seat": 21,
+      "renewal_date": "2026-10-07",
+      "note": "Review before renewal.",
+      "flag": "Review recommended"
+    },
+    {
+      "id": "l4",
+      "tool": "Zoom",
+      "dept": "People",
+      "owner": "Olivia Carter",
+      "owner_phone": "+15550101006",
+      "phone": "+15550101006",
+      "seats_purchased": 55,
+      "seats_active": 22,
+      "cost_per_seat": 15,
+      "renewal_date": "2026-09-28",
+      "note": "Large unused capacity.",
+      "flag": "Low utilization"
+    },
+    {
+      "id": "l5",
+      "tool": "Salesforce",
+      "dept": "Sales",
+      "owner": "Jordan Miller",
+      "owner_phone": "+15550101301",
+      "phone": "+15550101301",
+      "seats_purchased": 30,
+      "seats_active": 24,
+      "cost_per_seat": 75,
+      "renewal_date": "2026-11-01",
+      "note": "Healthy utilization.",
+      "flag": null
+    }
   ],
   "meetings": [
-    {"id":"m1","title":"Engineering Standup","time":"09:30","owner":"Engineering"},
-    {"id":"m2","title":"Analytics Sync","time":"11:30","owner":"Analytics"},
-    {"id":"m3","title":"Product Review","time":"14:00","owner":"Product"},
-    {"id":"m4","title":"Renewal Planning","time":"16:30","owner":"Finance"}
+    {
+      "id": "m1",
+      "title": "Engineering Standup",
+      "date": "2026-09-14",
+      "time": "10:00",
+      "dept": "Engineering",
+      "owner": "Engineering",
+      "recipient_ids": [],
+      "reminder_calls": [],
+      "reminder_status": "scheduled"
+    },
+    {
+      "id": "m2",
+      "title": "Analytics Sync",
+      "date": "2026-09-15",
+      "time": "11:30",
+      "dept": "Analytics",
+      "owner": "Analytics",
+      "recipient_ids": [],
+      "reminder_calls": [],
+      "reminder_status": "scheduled"
+    },
+    {
+      "id": "m3",
+      "title": "Product Review",
+      "date": "2026-09-16",
+      "time": "14:00",
+      "dept": "Design",
+      "owner": "Design",
+      "recipient_ids": [],
+      "reminder_calls": [],
+      "reminder_status": "scheduled"
+    },
+    {
+      "id": "m4",
+      "title": "Renewal Planning",
+      "date": "2026-09-17",
+      "time": "16:30",
+      "dept": "Sales",
+      "owner": "Sales",
+      "recipient_ids": [],
+      "reminder_calls": [],
+      "reminder_status": "scheduled"
+    },
+    {
+      "id": "m5",
+      "title": "People Operations Sync",
+      "date": "2026-09-18",
+      "time": "13:00",
+      "dept": "People",
+      "owner": "People",
+      "recipient_ids": [],
+      "reminder_calls": [],
+      "reminder_status": "scheduled"
+    }
   ],
   "memos": [
-    {"id":"memo1","title":"Q4 Security Training","body":"Complete security training by Friday.","status":"open"},
-    {"id":"memo2","title":"Remote Work Policy Update","body":"Managers must approve recurring remote schedules.","status":"open"},
-    {"id":"memo3","title":"SaaS Renewal Review","body":"Review tools below 50% utilization before renewal.","status":"open"}
+    {
+      "id": "memo1",
+      "title": "Q4 Security Training",
+      "body": "Complete security training by Friday.",
+      "status": "open",
+      "dept": "Engineering",
+      "recipient_ids": [],
+      "delivery_calls": [],
+      "delivery_status": "open"
+    },
+    {
+      "id": "memo2",
+      "title": "Remote Work Policy Update",
+      "body": "Managers must approve recurring remote schedules.",
+      "status": "open",
+      "dept": "People",
+      "recipient_ids": [],
+      "delivery_calls": [],
+      "delivery_status": "open"
+    },
+    {
+      "id": "memo3",
+      "title": "SaaS Renewal Review",
+      "body": "Review tools below 50% utilization before renewal.",
+      "status": "open",
+      "dept": "Sales",
+      "recipient_ids": [],
+      "delivery_calls": [],
+      "delivery_status": "open"
+    }
   ]
 }

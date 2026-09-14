@@ -2,11 +2,18 @@ from datetime import datetime, timezone
 
 def first(name): return (name or '').split()[0]
 
-def simulate(pillar, act, e):
+def simulate(pillar, act, e, context=None):
+    context = context or {}
     key=f'{pillar}:{act}'
     if key=='employee:checkin':
         turns=[('bot',f"Hi {first(e['name'])}, this is Relay calling on behalf of your company. We noticed you haven't checked in today — is everything okay?"),('user','I am working from home today and forgot to update the system.'),('bot',"No problem. I will record that and notify your manager.")]
         result={'checkin_status':'remote_today','reason':'Working from home and forgot to update the system','manager_notified':'yes','evidence':'Employee confirmed remote work today.'}; summary='Employee confirmed remote work; attendance updated.'
+    elif key=='employee:meeting-reminder':
+        turns=[('bot',f"Hi {first(e['name'])}, this is Relay with a reminder for {context.get('title','your upcoming meeting')} on {context.get('date','the scheduled date')} at {context.get('time','the scheduled time')}. Will you attend?"),('user','Yes, I have it on my calendar and I will attend.'),('bot','Great. I have recorded your attendance confirmation.')]
+        result={'attendance':'confirmed','response':'Employee confirmed they will attend the meeting.','evidence':'Employee verbally confirmed attendance.'}; summary='Meeting reminder delivered; attendance confirmed.'
+    elif key=='employee:memo':
+        turns=[('bot',f"Hi {first(e['name'])}, this is Relay with a memo for the {e.get('dept','')} team: {context.get('title','company update')}. {context.get('body','Please review the latest company update.') }"),('user','Understood. I will review it today.'),('bot','Thanks. I have recorded your acknowledgement.')]
+        result={'acknowledged':'yes','response':'Employee confirmed they will review the memo.','evidence':'Employee acknowledged the memo.'}; summary='Memo delivered; employee acknowledgement recorded.'
     elif key=='employee:offboard':
         tools=', '.join(e.get('assigned_software',e.get('tools',[])))
         turns=[('bot',f"Hi {first(e['name'])}, this is Relay. Since today is your last working day, I want to confirm your handoff."),('user','Sure.'),('bot',f"Can you confirm equipment return and closure of {tools} access?"),('user','Yes. I will return my laptop and badge to IT this afternoon. Please close the access.')]
