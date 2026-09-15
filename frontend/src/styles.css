@@ -99,3 +99,7 @@
   .brandBlock{justify-content:center;padding:0 0 25px}.mainArea{margin-left:72px;width:calc(100% - 72px)}.topHeader{padding:0 16px}.searchWrap{width:50%}
   .fiveKpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}.homeGrid,.homeLower{grid-template-columns:1fr}.homeGrid>.meetingsLarge,.homeGrid>.unusedPanel{grid-column:1}
 }
+.automationBar{display:flex;align-items:center;gap:10px;margin:0 36px 18px;padding:11px 15px;border:1px solid #252934;background:#10121a;border-radius:10px;font-size:11px;color:#9297a8}
+.automationBar .liveDot{color:var(--green)}
+.automationBar .liveDot.dim{color:#4a4d59}
+.automationBar button{margin-left:auto;border:1px solid #292d39;background:#161824;color:#c9ccd8;border-radius:7px;white-space:nowrap}

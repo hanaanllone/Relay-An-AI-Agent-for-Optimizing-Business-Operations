@@ -109,7 +109,16 @@ def apply_result(pillar,act,e,result):
         for lic in get_state()['licenses']:
             assigned=e.get('assigned_software',e.get('tools',[]))
             if lic['tool'] in assigned and lic['dept']==e['dept']:
-                new=max(0,lic['seats_purchased']-1); update_entity('license',lic['id'],{'seats_purchased':new,'flag':'Seat reclaimed','_reclaim_reason':e['name']+' offboarding'}); add_log('license',f"{lic['tool']} seat reclaimed after {e['name']} offboarding",True); break
+                # Flag it as pending rather than silently decrementing the
+                # seat count here — the actual reduction should come from a
+                # real license:seat-reclaim call to the department head (see
+                # tasks.py / dry_run.py), which is what the automation engine
+                # (or a manual "Review & optimize" click) does next. This is
+                # the difference between "the department head confirmed it"
+                # and "the backend quietly changed a number."
+                update_entity('license',lic['id'],{'flag':'Reclaim needed','_reclaim_reason':e['name']+' offboarding'})
+                add_log('license',f"{lic['tool']} flagged for seat reclaim after {e['name']} offboarding — awaiting department head confirmation call",True)
+                break
     return updated
 
 
@@ -189,29 +198,27 @@ def _call_log_row(call_id):
     d=dict(row); d['structured_result']=json.loads(row['structured_result']) if row['structured_result'] else None; d['transcript']=json.loads(row['transcript']) if row['transcript'] else []
     return d
 
-@app.get('/api/calls/<call_id>')
-def call_status(call_id):
-    """Reads the current status of a call. Dry-run calls are already
-    terminal by the time they're logged, so this just returns the stored
-    row. Live calls previously had NO way to ever be checked again after
-    creation — trigger-call would fire and the log stayed at status=queued
-    forever. This fetches the live result from CALL-E and, the first time it
-    sees a terminal status, applies it exactly the way the dry-run path
-    already does (write structured result, update the entity, log it)."""
+def refresh_call(call_id):
+    """Reads the current status of a call, applying the result the first
+    time it goes terminal. Dry-run calls are already terminal by the time
+    they're logged. Live calls previously had NO way to ever be checked
+    again after creation — trigger-call would fire and the log stayed at
+    status=queued forever. Shared by the /api/calls/<id> route AND the
+    automation engine, which polls any live call it placed until it resolves."""
     record=_call_log_row(call_id)
-    if not record: return jsonify({'error':'call not found'}),404
+    if not record: return None
     if call_id.startswith('dryrun_') or record['status'] in ('completed','failed','canceled'):
-        return jsonify(record)
+        return record
     try:
         live=get_call(call_id)
-    except Exception as ex:
-        return jsonify({'error':str(ex)}),502
+    except Exception:
+        return record
     if not live:
-        return jsonify(record)
+        return record
     status=live.get('status', record['status'])
     if status not in ('completed','failed','canceled'):
         record['status']=status
-        return jsonify(record)
+        return record
     structured=live.get('structured_result'); summary=live.get('summary'); transcript=live.get('transcript',[])
     save_call(call_id, record['pillar'], record['entity_id'], record['act'],
               {'summary':summary,'structured_result':structured,'transcript':transcript},
@@ -221,7 +228,26 @@ def call_status(call_id):
         apply_result(record['pillar'], record['act'], e, {'structured_result':structured})
     label=(e or {}).get('name') or (e or {}).get('tool') or record['entity_id']
     add_log(record['pillar'], f"{label} — {summary or status}")
-    return jsonify(_call_log_row(call_id))
+    return _call_log_row(call_id)
+
+@app.get('/api/calls/<call_id>')
+def call_status(call_id):
+    record=refresh_call(call_id)
+    if not record: return jsonify({'error':'call not found'}),404
+    return jsonify(record)
+
+from . import automation
+automation.wire(execute_call, refresh_call)
+automation.start_background_loop()
+
+@app.get('/api/automation/status')
+def automation_status():
+    return jsonify(automation.get_status())
+
+@app.post('/api/automation/run-once')
+def automation_run_once():
+    fired = automation.run_once()
+    return jsonify({'fired': fired, 'status': automation.get_status()})
 
 
 if __name__ == '__main__':
@@ -229,5 +255,13 @@ if __name__ == '__main__':
     app.run(
         host='0.0.0.0',
         port=int(os.getenv('FLASK_PORT', '5000')),
-        debug=True
+        debug=True,
+        # Flask's debug reloader re-executes this entire module in a second
+        # process to watch for file changes. Harmless normally, but this
+        # module now starts a background automation thread at import time —
+        # with the reloader on, that thread would start twice, in two
+        # separate processes both writing to the same SQLite file, causing
+        # every automated call to fire twice. use_reloader=False keeps
+        # debug's error pages while avoiding that double-execution.
+        use_reloader=False
     )

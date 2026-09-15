@@ -45,6 +45,8 @@ function App() {
   const [query, setQuery] = useState('');
   const [range, setRange] = useState('This week');
   const [notifications, setNotifications] = useState(false);
+  const [automation, setAutomation] = useState(null);
+  const [autoRunning, setAutoRunning] = useState(false);
 
   const load = async () => {
     try {
@@ -58,7 +60,32 @@ function App() {
     }
   };
 
-  useEffect(() => { if (auth) load(); }, [auth]);
+  const loadAutomation = async () => {
+    try {
+      const r = await fetch(`${API}/automation/status`);
+      const d = await r.json();
+      if (r.ok) setAutomation(d);
+    } catch (e) { /* keep last known status rather than erroring the whole page */ }
+  };
+
+  useEffect(() => { if (auth) { load(); loadAutomation(); } }, [auth]);
+
+  // Automation runs with nobody watching — poll so the dashboard reflects
+  // what it's done on its own instead of requiring a manual refresh.
+  useEffect(() => {
+    if (!auth) return undefined;
+    const id = window.setInterval(() => { load(); loadAutomation(); }, 6000);
+    return () => window.clearInterval(id);
+  }, [auth]);
+
+  async function runAutomationNow() {
+    setAutoRunning(true);
+    try {
+      const r = await fetch(`${API}/automation/run-once`, { method: 'POST' });
+      const d = await r.json();
+      if (r.ok) { setAutomation(d.status); await load(); }
+    } finally { setAutoRunning(false); }
+  }
 
   // Keep every hook unconditional: React requires hooks to run in the same
   // order on every render. This also makes the search model safe while the
@@ -161,6 +188,7 @@ function App() {
 
         {error && <div className="toast errorToast">{error}<button onClick={() => setError('')}>×</button></div>}
         {notifications && <div className="toast successToast">Action completed and business data updated.</div>}
+        <AutomationBar automation={automation} onRunNow={runAutomationNow} running={autoRunning} />
 
         <div className="pageArea">
           {tab === 'dashboard' && <Dashboard state={state} go={setTab} onCall={call} range={range} />}
@@ -262,12 +290,12 @@ function Employees({ items, onCall }) {
   const filtered = items.filter(e => filter === 'All' || (filter === 'Attention' ? !!e.flag || ['absent','late','unknown','not_checked_in'].includes(e.attendance_status) : e.attendance_status === filter.toLowerCase().replace(' ', '_')));
   return <Page title="Employees" sub="Attendance, people operations, offboarding and proactive check-ins." actions={<div className="filterGroup">{['All','Attention','Present','Remote','Late','Leave'].map(x => <button key={x} className={filter === x ? 'selected' : ''} onClick={() => setFilter(x)}>{x}</button>)}</div>}>
     <div className="sectionKpis"><SmallStat label="Present" value={items.filter(x => x.attendance_status === 'present').length} tone="green"/><SmallStat label="Absent" value={items.filter(x => x.attendance_status === 'absent').length} tone="red"/><SmallStat label="Late" value={items.filter(x => x.attendance_status === 'late').length} tone="yellow"/><SmallStat label="Remote" value={items.filter(x => x.attendance_status === 'remote').length} tone="purple"/><SmallStat label="Needs check-in" value={items.filter(x => ['unknown','not_checked_in'].includes(x.attendance_status)).length} tone="purple"/></div>
-    <div className="entityGrid">{filtered.map(e => <div className="entityCard" key={e.id}><div className="entityHeader"><div className="person"><div className="avatar personAvatar">{initials(e.name)}</div><div><h3>{e.name}</h3><small>{e.role} · {e.dept}</small></div></div><Status value={e.attendance_status}/></div><div className="entityFacts"><Fact label="Assigned software" value={(e.assigned_software || []).join(', ') || '—'}/><Fact label="Upcoming meetings" value={e.upcoming_meetings || 'None'}/><Fact label="Phone" value={e.phone}/><Fact label="Flag" value={e.flag || 'Clear'} warning={!!e.flag}/></div>{e.note && <p className="entityNote">{e.note}</p>}<div className="entityActions"><button className="primary small" onClick={() => onCall('employee', e, 'checkin')}>Call employee</button>{(e.offboarding_status === 'pending' || e.flag === 'Offboarding today') && <button onClick={() => onCall('employee', e, 'offboard')}>Offboarding call</button>}</div></div>)}</div>
+    <div className="entityGrid">{filtered.map(e => <div className="entityCard" key={e.id}><div className="entityHeader"><div className="person"><div className="avatar personAvatar">{initials(e.name)}</div><div><h3>{e.name}</h3><small>{e.role} · {e.dept}</small></div></div><Status value={e.attendance_status}/></div><div className="entityFacts"><Fact label="Assigned software" value={(e.assigned_software || []).join(', ') || '—'}/><Fact label="Upcoming meetings" value={e.upcoming_meetings || 'None'}/><Fact label="Phone" value={maskPhone(e.phone)}/><Fact label="Flag" value={e.flag || 'Clear'} warning={!!e.flag}/></div>{e.note && <p className="entityNote">{e.note}</p>}<div className="entityActions"><button className="primary small" onClick={() => onCall('employee', e, 'checkin')}>Call employee</button>{(e.offboarding_status === 'pending' || e.flag === 'Offboarding today') && <button onClick={() => onCall('employee', e, 'offboard')}>Offboarding call</button>}</div></div>)}</div>
   </Page>;
 }
 
 function Customers({ items, onCall }) {
-  return <Page title="Customers" sub="Customer lifecycle, renewals and service conversations."><div className="sectionKpis"><SmallStat label="Total customers" value={items.length}/><SmallStat label="Active" value={items.filter(x => x.customer_status === 'Active').length} tone="green"/><SmallStat label="At risk" value={items.filter(x => x.customer_status === 'At risk').length} tone="red"/><SmallStat label="Renewals soon" value={items.filter(x => daysUntil(x.renewal_date) <= 7).length} tone="purple"/></div><div className="entityGrid">{items.map(c => <div className="entityCard" key={c.id}><div className="entityHeader"><div><div className="eyebrow">CUSTOMER ACCOUNT</div><h3>{c.name}</h3><small>{c.customer_company || 'Customer account'}</small></div><span className={`statusPill ${c.customer_status === 'At risk' ? 'red' : 'green'}`}>{c.customer_status}</span></div><div className="customerPlan"><strong>{c.plan}</strong><span>Current plan</span></div><div className="entityFacts"><Fact label="Renewal" value={`${c.renewal_date} · ${Math.max(daysUntil(c.renewal_date), 0)}d`}/><Fact label="Usage" value={c.usage}/><Fact label="Contact" value={c.phone}/><Fact label="Recent issue" value={c.recent_issue || 'None'}/></div><div className="entityNote">{c.note}</div><div className="entityActions"><button className="primary small" onClick={() => onCall('customer', c, 'renewal')}>Renewal call</button><button onClick={() => onCall('customer', c, 'plan')}>Plan info</button><button onClick={() => onCall('customer', c, 'issue')}>Issue follow-up</button><button onClick={() => onCall('customer', c, 'feedback')}>Feedback</button></div></div>)}</div></Page>;
+  return <Page title="Customers" sub="Customer lifecycle, renewals and service conversations."><div className="sectionKpis"><SmallStat label="Total customers" value={items.length}/><SmallStat label="Active" value={items.filter(x => x.customer_status === 'Active').length} tone="green"/><SmallStat label="At risk" value={items.filter(x => x.customer_status === 'At risk').length} tone="red"/><SmallStat label="Renewals soon" value={items.filter(x => daysUntil(x.renewal_date) <= 7).length} tone="purple"/></div><div className="entityGrid">{items.map(c => <div className="entityCard" key={c.id}><div className="entityHeader"><div><div className="eyebrow">CUSTOMER ACCOUNT</div><h3>{c.name}</h3><small>{c.customer_company || 'Customer account'}</small></div><span className={`statusPill ${c.customer_status === 'At risk' ? 'red' : 'green'}`}>{c.customer_status}</span></div><div className="customerPlan"><strong>{c.plan}</strong><span>Current plan</span></div><div className="entityFacts"><Fact label="Renewal" value={`${c.renewal_date} · ${Math.max(daysUntil(c.renewal_date), 0)}d`}/><Fact label="Usage" value={c.usage}/><Fact label="Contact" value={maskPhone(c.phone)}/><Fact label="Recent issue" value={c.recent_issue || 'None'}/></div><div className="entityNote">{c.note}</div><div className="entityActions"><button className="primary small" onClick={() => onCall('customer', c, 'renewal')}>Renewal call</button><button onClick={() => onCall('customer', c, 'plan')}>Plan info</button><button onClick={() => onCall('customer', c, 'issue')}>Issue follow-up</button><button onClick={() => onCall('customer', c, 'feedback')}>Feedback</button></div></div>)}</div></Page>;
 }
 
 function Software({ items, onCall, onAdd }) {
@@ -332,6 +360,27 @@ function Panel({ title, subtitle, action, children, className='' }) { return <se
 function Kpi({ title, value, note, icon, tone, chart }) { return <div className="kpiCard"><div className="kpiTop"><span><i className={`kpiIcon ${tone}`}>{icon}</i>{title}</span><i className={`signal ${tone}`} /></div><strong>{value}</strong><small>{note}</small>{chart ? <MiniSpark /> : <div className={`kpiTrack ${tone}`}><i style={{width:`${Math.min(100, Number(value)||65)}%`}} /></div>}</div>; }
 function MiniSpark(){return <div className="miniSpark">{[20,29,35,31,46,54,60,75,70,88,96].map((h,i)=><i key={i} style={{height:`${h}%`}} />)}</div>;}
 function SmallStat({label,value,tone=''}){return <div className="smallStat"><span>{label}</span><strong className={tone}>{value}</strong></div>}
+function maskPhone(phone) {
+  if (!phone) return '—';
+  const digits = phone.replace(/\D/g, '');
+  return `••• ••• ${digits.slice(-4)}`;
+}
+
+function AutomationBar({ automation, onRunNow, running }) {
+  const firedCount = automation?.last_result?.filter(f => f.callId).length ?? 0;
+  const lastRun = automation?.last_run ? new Date(automation.last_run).toLocaleTimeString() : 'not yet';
+  return (
+    <div className="automationBar">
+      <span className={`liveDot ${automation?.running ? '' : 'dim'}`} />
+      <span>
+        Automation checks every {automation?.interval_seconds ?? '…'}s on its own — nobody clicks
+        "call" for this. Last check {lastRun}{automation?.last_run ? `, ${firedCount} call(s) placed` : ''}.
+      </span>
+      <button className="small" onClick={onRunNow} disabled={running}>{running ? 'Checking…' : 'Run check now'}</button>
+    </div>
+  );
+}
+
 function Fact({label,value,warning}){return <div><span>{label}</span><b className={warning?'warningText':''}>{value}</b></div>}
 function Status({value}){const labels={present:'Present',absent:'Absent',late:'Late',remote:'Remote',leave:'On leave',unknown:'Not checked in',not_checked_in:'Not checked in'};return <span className={`statusPill ${value==='absent'||value==='unknown'||value==='not_checked_in'?'red':value==='late'?'yellow':value==='remote'?'purple':'green'}`}>{labels[value]||value}</span>}
 function Empty({text}){return <div className="empty">{text}</div>}
