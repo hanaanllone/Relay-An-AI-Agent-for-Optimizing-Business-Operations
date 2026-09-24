@@ -118,7 +118,7 @@ This section exists because the destination repository's contribution guidelines
 - **No duplicate jobs.** Firing is gated by each entity's own state (see table above) and an in-flight tracker for live calls still awaiting a result, so the same open condition can't place two calls at once.
 - **To pause automation:** turn off "Automatic follow-ups" in Settings (`PATCH /api/settings {"automatic_followups": false}`), or turn off the specific pillar's toggle (`employee_operations`, `customer_lifecycle`, `vendor_optimization`).
 - **To stop it entirely:** stop the Flask process — the loop is an in-process daemon thread with no external scheduler, no cron entry, and nothing that persists once the process exits.
-- **No cancellation mid-call.** Once a real (non-dry-run) call is placed via CALL-E, there is no API to cancel it — it runs to completion. This is a property of CALL-E's API, not of this app, which is why dry-run is the default rather than an opt-in, and why the automation interval should be realistic in production (minutes/hours), not the short demo default.
+- **No cancellation mid-call.** Once a real (non-dry-run) call is placed via CALL-E, there is no API to cancel it, it runs to completion. This is a property of CALL-E's API, not of this app, which is why dry-run is the default rather than an opt-in, and why the automation interval should be realistic in production (minutes/hours), not the short demo default.
 
 Relevant env vars (`.env`):
 
