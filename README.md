@@ -1,6 +1,6 @@
 # Relay — Your Business, Optimized.
 
-Relay is a proactive AI business-operations agent. It uses company-specific policies and business data to call employees, customers, and software owners through CALL-E, capture structured outcomes, and update the company's operational state.
+Relay is a proactive AI business-operations agent. It uses company specific policies and business data to call employees, customers, and software owners through CALL-E, capture structured outcomes, and update the company's operational state.
 
 **Everything in this app is automated by default.** A background engine checks real conditions — using actual `datetime` comparisons, not static flags — every `AUTOMATION_INTERVAL_SECONDS` and places calls on its own. See [Automation](#automation) below. Manual "Call" buttons still exist for demoing a specific scenario on demand, but nothing requires them.
 
